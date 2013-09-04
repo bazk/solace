@@ -1,0 +1,67 @@
+.menu-left {
+    width: @menu-width;
+    height: 100%;
+    float: left;
+}
+
+ul.menu {
+    float: left;
+    width: 100%;
+    height: 100%;
+    background-color: whiteSmoke;
+    border: 1px solid #E3E3E3;
+    padding: 10px 0;
+    margin: 0;
+
+    border: 1px solid #D4D4D4;
+    border-width: 0 1px 1px 0px;
+
+    -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+       -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+
+    li {
+        list-style: none;
+        font-size: 12px;
+        line-height: 18px;
+
+        a {
+            padding: 3px 15px;
+            text-shadow: 0 1px 0 rgba(171, 195, 255, 0.5);
+            display: block;
+
+            &:hover,
+            &:focus {
+                text-decoration: none;
+                background-color: @menu-bg-hover-color;
+            }
+        }
+
+        &.active {
+            background-color: @menu-active-color;
+            font-weight: bold;
+
+            a {
+                color: #ffffff;
+                text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+
+                &:hover,
+                &:focus {
+                    background-color: @menu-active-hover-color;
+                    cursor: default;
+                }
+            }
+        }
+
+        &.header {
+            display: block;
+            padding: 5px 15px;
+            font-size: 11px;
+            font-weight: bold;
+            line-height: 20px;
+            color: #999;
+            text-transform: uppercase;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+    }
+}

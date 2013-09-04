@@ -1,0 +1,78 @@
+<div class="content">
+
+    <div class="toolbar">
+        <div class="pull-left">
+            <button type="button" class="btn btn-default" ng-click="new.show()">
+                <span class="glyphicon glyphicon-plus"></span> New
+            </button>
+            <button type="button" class="btn btn-default">
+                <span class="glyphicon glyphicon-remove"></span> Remove Selected
+            </button>
+        </div>
+
+        <div class="form-group pull-right">
+            <input type="search" class="form-control" ng-model="q">
+        </div>
+    </div>
+
+    <div class="modal" ng-show="new.doShow">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" ng-click="new.hide()" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title">New Experiment</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger" ng-show="new.doShowError"><strong>Oops!</strong> {{ new.error }}</div>
+                    <form role="form">
+                        <div class="form-group" ng-class="new.name.class">
+                            <label class="control-label" for="name">Name:</label>
+                            <input type="text" class="form-control" id="name" ng-model="new.name.value">
+                        </div>
+                        <div class="form-group" ng-class="new.desc.class">
+                            <label class="control-label" for="desc">Description (optional):</label>
+                            <textarea class="form-control ta-vertical" id="desc" rows="3" ng-model="new.desc.value"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" ng-click="new.hide()">Cancel</button>
+                    <button type="button" class="btn btn-primary" ng-click="new.save()">
+                        Create <i class="saving" ng-show="new.doShowLoading"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <table class="table table-selectable">
+        <thead>
+            <tr>
+                <th style="min-width: 40px;  width: 48px;" class="cb" ng-click="toggleSelectionAll()">
+                    <input type="checkbox" id="sel-all" ng-model="selectAll" />
+                    <label for="sel-all"></label>
+                </th>
+                <th style="min-width: 260px;">Experiment</th>
+                <th style="min-width: 115px;">Created at</th>
+                <th style="min-width: 316px;">Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="exp in experiments | filter:q" ng-click="toggleSelection(exp)">
+                <td class="cb">
+                    <input type="checkbox" id="sel-{{exp.id}}" ng-model="exp.sel" />
+                    <label for="sel-{{exp.id}}"></label>
+                </td>
+                <td>
+                    <a href="#/experiment/{{exp.id}}"><b>{{exp.name}}</b></a> <span class="label label-important"></span>
+                </td>
+                <td>{{exp.created_at | date:'dd/MM/yyyy HH:mm:ss'}}</td>
+                <td>
+                    <div class="control-group marginfix">
+                        {{exp.description}}
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,245 @@
+@import "bootstrap/_variables.less";
+@import "bootstrap/_mixins.less";
+
+@import "_menu.less";
+@import "_navbar.less";
+@import "_widget.less";
+
+body,
+html {
+    margin:         0;
+    padding:        0;
+    height:         100%;
+}
+
+.content {
+  margin-left: @menu-width;
+}
+
+.draggable {
+    -webkit-user-select: none;
+     -khtml-user-select: none;
+       -moz-user-select: none;
+            user-select: none;
+
+    /* Required to make elements draggable in old WebKit */
+    -webkit-user-drag: element;
+     -khtml-user-drag: element;
+}
+
+.marginfix {
+    margin-bottom: 0px;
+}
+
+.cb {
+  position: relative;
+}
+
+.cb input[type=checkbox] {
+  display: none;
+}
+
+.cb label {
+  cursor: pointer;
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  top: 6px;
+  left: 6px;
+  background: #eee;
+  border:1px solid #ddd;
+}
+
+.cb label:after {
+  opacity: 0.0;
+  content: '';
+  position: absolute;
+  width: 9px;
+  height: 5px;
+  background: transparent;
+  top: 6px;
+  left: 6px;
+  border: 3px solid #333;
+  border-top: none;
+  border-right: none;
+
+  -webkit-transform: rotate(-45deg);
+  -moz-transform: rotate(-45deg);
+  -o-transform: rotate(-45deg);
+  -ms-transform: rotate(-45deg);
+  transform: rotate(-45deg);
+}
+
+.cb label:hover::after {
+  opacity: 0.5;
+}
+
+/**
+ * Create the checkbox state for the tick
+ */
+.cb input[type=checkbox]:checked + label:after {
+  opacity: 1;
+}
+
+.table-selectable {
+  > tbody {
+    > tr {
+      > td,
+      > th {
+        cursor: pointer;
+      }
+    }
+
+    > tr:hover {
+      > td,
+      > th {
+        background-color: @table-bg-hover;
+      }
+    }
+  }
+}
+
+.loading {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  margin: 8px 4px;
+  background-image: url("../img/loading.gif");
+  background-repeat: no-repeat;
+}
+
+.saving {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin: 0px -4px -3px 4px;
+  background-image: url("../img/saving.gif");
+  background-repeat: no-repeat;
+}
+
+.error {
+  position: fixed;
+  top: -6px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.error-inner {
+  display: inline-block;
+  margin: 0 auto;
+  padding: 15px 15px 12px 15px;
+  margin-bottom: @line-height-computed;
+  width: auto;
+  border: 1px solid transparent;
+  border-radius: @alert-border-radius;
+  padding-right: (@alert-padding + 20);
+
+  .box-shadow(0 3px 3px rgba(0,0,0,.1));
+
+  // Headings for larger alerts
+  h4 {
+    margin-top: 0;
+    // Specified for the h4 to prevent conflicts of changing @headingsColor
+    color: inherit;
+  }
+  // Provide class for links that match alerts
+  .error-link {
+    font-weight: @alert-link-font-weight;
+  }
+
+  // Improve alignment and spacing of inner content
+  > p,
+  > ul {
+    margin-bottom: 0;
+  }
+  > p + p {
+    margin-top: 5px;
+  }
+
+  .close {
+    position: relative;
+    top: 1px;
+    right: -21px;
+    color: inherit;
+  }
+}
+
+.error-success {
+  .error-variant(@alert-success-bg; @alert-success-border; @alert-success-text);
+}
+.error-info {
+  .error-variant(@alert-info-bg; @alert-info-border; @alert-info-text);
+}
+.error-warning {
+  .error-variant(@alert-warning-bg; @alert-warning-border; @alert-warning-text);
+}
+.error-danger {
+  .error-variant(@alert-danger-bg; @alert-danger-border; @alert-danger-text);
+}
+
+.error-variant(@background; @border; @text-color) {
+  background-color: @background;
+  border-color: @border;
+  color: @text-color;
+  hr {
+    border-top-color: darken(@border, 5%);
+  }
+  .error-link {
+    color: darken(@text-color, 10%);
+  }
+}
+
+.slide {
+  -webkit-transition: all ease-in 0.5s;
+     -moz-transition: all ease-in 0.5s;
+       -o-transition: all ease-in 0.5s;
+          transition: all ease-in 0.5s;
+}
+
+.slide.ng-hide {
+  display: block !important;
+  top:-60px;
+}
+
+.fadein.ng-enter {
+    -webkit-transition: 0.5s linear all;
+       -moz-transition: 0.5s linear all;
+            transition: 0.5s linear all;
+
+    opacity: 0;
+}
+
+.fadein.ng-enter.ng-enter-active {
+    opacity: 1;
+}
+
+.progress {
+  border-radius: 0;
+  margin-bottom: 0;
+}
+
+.toolbar {
+  background-color: #dddddd;
+  margin: 0;
+  padding: 4px;
+  height: 43px;
+  border-bottom: 1px solid #c0c0c0;
+}
+
+.filter {
+  float: right;
+  width: 120px;
+}
+
+.modal {
+  display: block;
+}
+
+.modal.ng-hide {
+  display: none;
+}
+
+.ta-vertical {
+  resize: vertical;
+}
