@@ -1,0 +1,1 @@
+exports.conString = "postgres://solace:zxASd0&.AS)D(-=Asd098C@localhost:5432/solace";

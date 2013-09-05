@@ -42,4 +42,8 @@ angular.module('solace.factories', []).
                 return deferred.promise;
             }
         }
+    }).
+
+    factory('SessionFactory', function($resource) {
+        return $resource('/sessions');
     });

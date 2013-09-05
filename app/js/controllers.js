@@ -19,10 +19,12 @@ angular.module('solace.controllers', []).
         update_active();
     }).
 
-    controller('NavBarCtrl', function ($scope) {
+    controller('NavBarCtrl', function ($scope, $rootScope, $location, SessionFactory) {
         $scope.loading = false;
         $scope.errorMessage = "";
         $scope.showError = false;
+
+        $rootScope.session = SessionFactory.get();
 
         $scope.$on(
             "$routeChangeStart",
@@ -49,6 +51,11 @@ angular.module('solace.controllers', []).
 
         $scope.closeError = function () {
             $scope.showError = false;
+        }
+
+        $scope.logout = function () {
+            $rootScope.session = SessionFactory.delete();
+            $location.path('/login');
         }
     }).
 
@@ -154,4 +161,18 @@ angular.module('solace.controllers', []).
                     experimentsFactory.delete(test);
             });
         }
+    }).
+
+    controller('LoginCtrl', function ($scope, $rootScope, $location, SessionFactory) {
+        $scope.user = {username: '', password: ''};
+
+        $scope.login = function () {
+            $scope.user = SessionFactory.save($scope.user, function(success) {
+                $rootScope.session = success;
+                $rootScope.loggedIn = true;
+                $location.path('/dashboard');
+            }, function(error) {
+                $scope.loginError = true;
+            });
+        };
     });

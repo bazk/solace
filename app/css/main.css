@@ -335,3 +335,19 @@ html {
 .ta-vertical {
   resize: vertical;
 }
+.login-box {
+  position: absolute;
+  top: 34px;
+  left: -124px;
+  width: 198px;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+}
+.login-box div.form-group {
+  margin-bottom: 6px;
+}
+.label-normal-weight {
+  font-weight: normal;
+}

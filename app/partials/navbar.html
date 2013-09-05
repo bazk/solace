@@ -7,3 +7,12 @@
         <strong>Oops!</strong> {{ errorMessage }}
     </div>
 </div>
+
+<form class="navbar-form navbar-right" role="search">
+    <div class="btn-group">
+        <button type="button" class="btn btn-default dropdown-toggle" ng-click="logout()">
+            {{ session.username }} <span class="caret"></span>
+        </button>
+    </div>
+</form>
+
