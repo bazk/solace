@@ -1,6 +1,18 @@
 'use strict';
 
 angular.module('solace.controllers', []).
+    controller('MainCtrl', function ($scope, SessionFactory) {
+        $scope.session = SessionFactory.get();
+        if (!$scope.session.loggedIn)
+            $location.path('/login');
+
+        $scope.$on('$sessionUpdate', function (newSession) {
+            $scope.session = newSession;
+            if (!$scope.session.loggedIn)
+                $location.path('/login');
+        });
+    }).
+
     controller('MenuLeftCtrl', function ($scope, $location, $route) {
         $scope.menuitems = [
             {title: "Dashboard", link: "#/dashboard", section: "dashboard", active: "", icon: "glyphicon glyphicon-stats"},
@@ -62,7 +74,7 @@ angular.module('solace.controllers', []).
     controller('DashboardCtrl', function ($scope) {
     }).
 
-    controller('ExperimentsCtrl', function ($scope, $route, experiments, experimentFactory) {
+    controller('ExperimentsCtrl', function ($scope, $route, experiments, ExperimentsFactory) {
         $scope.experiments = experiments;
 
         $scope.toggleSelection = function (exp) {
@@ -119,16 +131,16 @@ angular.module('solace.controllers', []).
                 }
                 $scope.new.name.class = "";
 
-                experimentFactory.insertExperiment({
+                var exp = {
                     name: $scope.new.name.value,
                     description: $scope.new.desc.value
-                },
-                {
-                    success: function () {
+                };
+
+                ExperimentsFactory.save(exp,
+                    function (success) {
                         $scope.new.hide();
                         $route.reload();
-                    },
-                    error: function (reason) {
+                    }, function (error) {
                         $scope.new.error = reason;
                         $scope.new.doShowError = true;
                         $scope.new.doShowLoading = false;
@@ -138,44 +150,48 @@ angular.module('solace.controllers', []).
         };
     }).
 
-    controller('ExperimentCtrl', function ($scope, $routeParams, experimentFactory) {
-        $scope.tests = experimentFactory.getTestsByExperiment($routeParams.id);
+    controller('ExperimentCtrl', function ($scope, $routeParams, ExperimentFactory) {
+        $scope.experiment = experimentFactory.get({id: $routeParams.id});
 
-        $scope.toggleSelection = function (test) {
-            test.sel = !test.sel;
-            $scope.selectAll = false;
-        }
+        // $scope.toggleSelection = function (test) {
+        //     test.sel = !test.sel;
+        //     $scope.selectAll = false;
+        // }
 
-        $scope.selectAll = false;
-        $scope.toggleSelectionAll = function () {
-            $scope.selectAll = !$scope.selectAll;
+        // $scope.selectAll = false;
+        // $scope.toggleSelectionAll = function () {
+        //     $scope.selectAll = !$scope.selectAll;
 
-            angular.forEach($scope.tests, function (test) {
-                test.sel = $scope.selectAll;
-            });
-        }
+        //     angular.forEach($scope.tests, function (test) {
+        //         test.sel = $scope.selectAll;
+        //     });
+        // }
 
-        $scope.removeSelected = function () {
-            angular.forEach($scope.tests, function(test) {
-                if (test.sel)
-                    experimentsFactory.delete(test);
-            });
-        }
+        // $scope.removeSelected = function () {
+        //     angular.forEach($scope.tests, function(test) {
+        //         if (test.sel)
+        //             experimentsFactory.delete(test);
+        //     });
+        // }
     }).
 
     controller('LoginCtrl', function ($scope, $rootScope, $location, SessionFactory) {
         $scope.user = {};
         $scope.showLoading = false;
+        $scope.showError = false;
+        $scope.errorMessage = "";
 
         $scope.login = function () {
             $scope.showLoading = true;
-            $scope.user = SessionFactory.save($scope.user, function(success) {
-                $rootScope.session = success;
-                $rootScope.loggedIn = true;
-                $location.path('/dashboard');
+            $scope.showError = false;
+
+            SessionFactory.save($scope.user, function(success) {
+                $rootScope.$broadcast('$sessionUpdate', success);
+                $location.path('/');
                 $scope.showLoading = false;
             }, function(error) {
-                $scope.loginError = true;
+                $scope.errorMessage = error;
+                $scope.showError = true;
                 $scope.showLoading = false;
             });
         };

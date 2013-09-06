@@ -13,12 +13,14 @@ app.use(express.cookieParser());
 app.use(express.session({secret: 'asd87c9a8sc9a8j19m98asj982'}));
 app.use(express.static(__dirname + '/app'));
 
-app.post('/sessions', sessions.login);
-app.get('/sessions', sessions.get);
-app.delete('/sessions', sessions.logout);
+app.post('/api/sessions', sessions.login);
+app.get('/api/sessions', sessions.get);
+app.delete('/api/sessions', sessions.logout);
 
-app.get('/data/experiments', sessions.auth, experiments.get);
-app.post('/data/experiments', sessions.auth, experiments.post);
-app.get('/data/experiments/:id/tests', sessions.auth, tests.get);
+app.get('/api/experiments', sessions.auth, experiments.findAll);
+app.post('/api/experiments', sessions.auth, experiments.insert);
+
+app.get('/api/experiment/:id', sessions.auth, experiments.findById);
+app.post('/api/experiment/:id', sessions.auth, experiments.update);
 
 app.listen(3000);
