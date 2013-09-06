@@ -1,15 +1,30 @@
 <div class="content">
-    <form role="form" ng-submit="login()">
-        <div class="form-group">
-            <label for="username">Username:</label>
-            <input type="text" class="form-control" id="username" ng-model="user.username">
+    <div class="modal-backdrop fade in"></div>
+    <div class="modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form role="form" ng-submit="login()">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Sign in</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-danger ng-hide"><strong>Oops!</strong> {{ error }}</div>
+                        <div class="form-group">
+                            <label for="username">Username:</label>
+                            <input type="text" class="form-control" id="username" ng-model="user.username">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" class="form-control" id="password" ng-model="user.password">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">
+                            Login <i class="saving" ng-show="showLoading"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" class="form-control" id="password" ng-model="user.password">
-        </div>
-        <div class="form-group pull-right">
-            <button type="submit" class="btn btn-default">Login</button>
-        </div>
-    </form>
+    </div>
 </div>

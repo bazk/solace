@@ -164,15 +164,19 @@ angular.module('solace.controllers', []).
     }).
 
     controller('LoginCtrl', function ($scope, $rootScope, $location, SessionFactory) {
-        $scope.user = {username: '', password: ''};
+        $scope.user = {};
+        $scope.showLoading = false;
 
         $scope.login = function () {
+            $scope.showLoading = true;
             $scope.user = SessionFactory.save($scope.user, function(success) {
                 $rootScope.session = success;
                 $rootScope.loggedIn = true;
                 $location.path('/dashboard');
+                $scope.showLoading = false;
             }, function(error) {
                 $scope.loginError = true;
+                $scope.showLoading = false;
             });
         };
     });

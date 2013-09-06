@@ -8,8 +8,8 @@
     <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
-    <div class="navbar" ng-include src="'partials/navbar.html'" ng-controller="NavBarCtrl" ng-show="session.loggedIn"></div>
-    <div class="menu-left" ng-include src="'partials/menu-left.html'" ng-controller="MenuLeftCtrl" ng-show="session.loggedIn"></div>
+    <div class="navbar" ng-include src="'partials/navbar.html'" ng-controller="NavBarCtrl"></div>
+    <div class="menu-left" ng-include src="'partials/menu-left.html'" ng-controller="MenuLeftCtrl"></div>
     <div ng-view class="fadein"></div>
 
     <script src="lib/jquery/jquery.js"></script>
