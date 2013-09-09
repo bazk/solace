@@ -18,7 +18,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr ng-repeat="test in tests" ng-click="toggleSelection(test)">
+            <tr ng-repeat="test in experiment.tests" ng-click="toggleSelection(test)">
                 <td class="cb">
                     <input type="checkbox" id="sel-{{test.id}}" ng-model="test.sel" />
                     <label for="sel-{{test.id}}"></label>

@@ -1,15 +1,21 @@
 'use strict';
 
 angular.module('solace.controllers', []).
-    controller('MainCtrl', function ($scope, SessionFactory) {
-        $scope.session = SessionFactory.get();
-        if (!$scope.session.loggedIn)
-            $location.path('/login');
+    controller('MainCtrl', function ($scope, $rootScope, $location, SessionFactory) {
+        $scope.session = SessionFactory.get(function (session){
+            $rootScope.$broadcast('$sessionUpdate', session);
+        });
 
-        $scope.$on('$sessionUpdate', function (newSession) {
+        $scope.$on('$sessionUpdate', function (e, newSession) {
             $scope.session = newSession;
             if (!$scope.session.loggedIn)
                 $location.path('/login');
+        });
+
+        $scope.$on('$accessDenied', function (e) {
+            SessionFactory.get(function (session) {
+                $rootScope.$broadcast('$sessionUpdate', session);
+            });
         });
     }).
 
@@ -36,25 +42,17 @@ angular.module('solace.controllers', []).
         $scope.errorMessage = "";
         $scope.showError = false;
 
-        $rootScope.session = SessionFactory.get();
-
-        $scope.$on(
-            "$routeChangeStart",
-            function(event, next, current) {
+        $scope.$on("$routeChangeStart", function(event, next, current) {
                 $scope.loading = true;
                 $scope.showError = false;
             }
         );
-        $scope.$on(
-            "$routeChangeSuccess",
-            function(event, current, previous) {
+        $scope.$on("$routeChangeSuccess", function(event, current, previous) {
                 $scope.loading = false;
                 $scope.showError = false;
             }
         );
-        $scope.$on(
-            "$routeChangeError",
-            function(event, current, previous, message) {
+        $scope.$on("$routeChangeError", function(event, current, previous, message) {
                 $scope.loading = false;
                 $scope.errorMessage = message;
                 $scope.showError = true;
@@ -66,8 +64,9 @@ angular.module('solace.controllers', []).
         }
 
         $scope.logout = function () {
-            $rootScope.session = SessionFactory.delete();
-            $location.path('/login');
+            SessionFactory.delete(function(session) {
+                $rootScope.$broadcast('$sessionUpdate', session);
+            });
         }
     }).
 
@@ -145,13 +144,13 @@ angular.module('solace.controllers', []).
                         $scope.new.doShowError = true;
                         $scope.new.doShowLoading = false;
                     }
-                });
+                );
             }
         };
     }).
 
     controller('ExperimentCtrl', function ($scope, $routeParams, ExperimentFactory) {
-        $scope.experiment = experimentFactory.get({id: $routeParams.id});
+        $scope.experiment = ExperimentFactory.get({id: $routeParams.id});
 
         // $scope.toggleSelection = function (test) {
         //     test.sel = !test.sel;
@@ -185,8 +184,8 @@ angular.module('solace.controllers', []).
             $scope.showLoading = true;
             $scope.showError = false;
 
-            SessionFactory.save($scope.user, function(success) {
-                $rootScope.$broadcast('$sessionUpdate', success);
+            SessionFactory.save($scope.user, function(session) {
+                $rootScope.$broadcast('$sessionUpdate', session);
                 $location.path('/');
                 $scope.showLoading = false;
             }, function(error) {

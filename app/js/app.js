@@ -18,7 +18,7 @@ angular.module('solace', ['ngRoute', 'ngAnimate', 'ngResource', 'solace.controll
                 controller: 'ExperimentsCtrl',
                 resolve: {
                     experiments: function (ExperimentsFactory) {
-                        return ExperimentsFactory.get();
+                        return ExperimentsFactory.query();
                     }
                 }
             }).
@@ -29,16 +29,14 @@ angular.module('solace', ['ngRoute', 'ngAnimate', 'ngResource', 'solace.controll
             }).
             otherwise({redirectTo: '/dashboard'});
 
-        // $httpProvider.interceptors.push(function ($rootScope, $location, $q) {
-        //     return {
-        //         'responseError': function(rejection) {
-        //             // if we're not logged-in to the web service, redirect to login page
-        //             if (rejection.status === 401 && $location.path() != '/login') {
-        //                 $rootScope.session = {loggedIn: false, username: "", error: false};
-        //                 $location.path('/login');
-        //             }
-        //             return $q.reject(rejection);         
-        //         }
-        //     };
-        // });
+        $httpProvider.interceptors.push(function ($rootScope) {
+            return {
+                'responseError': function(rejection) {
+                    if (rejection.status === 401) {
+                        $rootScope.$broadcast('$accessDenied');
+                    }
+                    return rejection;         
+                }
+            };
+        });
     });

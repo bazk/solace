@@ -52,7 +52,7 @@ exports.logout = function (req, res) {
 
 exports.auth = function (req, res, next) {
     if (!req.session.user_id)
-        return res.send(401, {loggedIn: false, error: 'not_logged_in'});
+        return res.send(401, "");
 
     req.user = req.session.user_id;
     next();
