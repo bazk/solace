@@ -27,6 +27,16 @@ angular.module('solace', ['ngRoute', 'ngAnimate', 'ngResource', 'solace.controll
                 templateUrl: 'partials/experiment.html',
                 controller: 'ExperimentCtrl'
             }).
+            when('/instance/:id', {
+                section: 'experiments',
+                templateUrl: 'partials/instance.html',
+                controller: 'InstanceCtrl'
+            }).
+            when('/run/:id', {
+                section: 'experiments',
+                templateUrl: 'partials/run.html',
+                controller: 'RunCtrl'
+            }).
             otherwise({redirectTo: '/dashboard'});
 
         $httpProvider.interceptors.push(function ($rootScope) {

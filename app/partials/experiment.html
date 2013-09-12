@@ -10,7 +10,7 @@
                     <input type="checkbox" id="sel-all" ng-model="selectAll" />
                     <label for="sel-all"></label>
                 </th>
-                <th style="min-width: 100px; width: 100px;">Test</th>
+                <th style="min-width: 100px; width: 100px;">Instance</th>
                 <th style="min-width: 182px; width: 182px;">Started at</th>
                 <th style="min-width: 182px; width: 182px;">Finished at</th>
                 <th style="min-width: 232px; width: 232px;">Progress</th>
@@ -18,24 +18,24 @@
             </tr>
         </thead>
         <tbody>
-            <tr ng-repeat="test in experiment.tests" ng-click="toggleSelection(test)">
+            <tr ng-repeat="instance in experiment.instances" ng-click="toggleSelection(instance)">
                 <td class="cb">
-                    <input type="checkbox" id="sel-{{test.id}}" ng-model="test.sel" />
-                    <label for="sel-{{test.id}}"></label>
+                    <input type="checkbox" id="sel-{{instance.id}}" ng-model="instance.sel" />
+                    <label for="sel-{{instance.id}}"></label>
                 </td>
                 <td>
-                    <a href="#/test/{{test.id}}"><b>{{test.id}}</b></a> <span class="label label-important"></span>
+                    <a href="#/instance/{{instance.id}}"><b>{{instance.id}}</b></a> <span class="label label-important"></span>
                 </td>
-                <td>{{test.started_at | date:'dd/MM/yyyy HH:mm:ss'}}</td>
-                <td>{{test.finished_at | date:'dd/MM/yyyy HH:mm:ss'}}</td>
+                <td>{{instance.started_at | date:'dd/MM/yyyy HH:mm:ss'}}</td>
+                <td>{{instance.finished_at | date:'dd/MM/yyyy HH:mm:ss'}}</td>
                 <td>
                     <div class="progress">
-                        <div class="progress-bar" style="width: {{test.progress*100}}%;"></div>
+                        <div class="progress-bar" style="width: {{instance.progress*100}}%;"></div>
                     </div>
                 </td>
                 <td>
                     <div class="control-group marginfix">
-                        {{test.comment}}
+                        {{instance.comment}}
                     </div>
                 </td>
             </tr>

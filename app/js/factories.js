@@ -11,8 +11,19 @@ angular.module('solace.factories', []).
 
     factory('ExperimentFactory', function($resource) {
         return $resource('/api/experiment/:id');
+    }).
+
+    factory('InstanceFactory', function($resource) {
+        return $resource('/api/instance/:id');
+    }).
+
+    factory('RunFactory', function($resource) {
+        return $resource('/api/run/:id');
+    }).
+
+    factory('ResultFactory', function($resource) {
+        return $resource('/api/run/:id/result/:name');
     });
-    
 
     //     return {
     //         getExperiments: function () {

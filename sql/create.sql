@@ -1,3 +1,16 @@
+DROP TABLE IF EXISTS results CASCADE;
+DROP TABLE IF EXISTS runs CASCADE;
+DROP TABLE IF EXISTS parameters CASCADE;
+DROP TABLE IF EXISTS instances CASCADE;
+DROP TABLE IF EXISTS experiment_group_permissions CASCADE;
+DROP TABLE IF EXISTS experiment_user_permissions CASCADE;
+DROP TABLE IF EXISTS experiments CASCADE;
+DROP TABLE IF EXISTS user_groups CASCADE;
+DROP TABLE IF EXISTS groups CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TYPE IF EXISTS param_type CASCADE;
+
+
 CREATE TYPE param_type AS ENUM ('str', 'integer', 'real', 'boolean');
 
 CREATE TABLE users (
@@ -6,6 +19,8 @@ CREATE TABLE users (
     password    TEXT NOT NULL,
     email       TEXT NOT NULL
 );
+
+CREATE UNIQUE INDEX users_unique_name_idx ON users (lower(username));
 
 CREATE TABLE groups (
     id          SERIAL PRIMARY KEY,
@@ -59,7 +74,8 @@ CREATE TABLE runs (
     instance_id INTEGER NOT NULL REFERENCES instances(id),
     started_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     finished_at TIMESTAMP WITH TIME ZONE,
-    progress    REAL DEFAULT 0.0
+    progress    REAL DEFAULT 0.0,
+    canceled    BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE results (

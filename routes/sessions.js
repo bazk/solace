@@ -1,6 +1,5 @@
 var pg = require('pg');
 var config = require('../config.js')
-var crypto = require('crypto');
 
 exports.login = function (req, res) {
     if (req.session.user_id)
@@ -14,13 +13,13 @@ exports.login = function (req, res) {
         return res.send(400, {loggedIn: false, error: 'invalid_username_password'});
 
     var username = req.body.username,
-        password = crypto.createHash('md5').update(req.body.password).digest("hex");
+        password = req.body.password;
 
     pg.connect(config.conString, function(err, client, done) {
         if (err)
             return res.send(500, {loggedIn: false, error: 'db_connection_failed'});
 
-        var q = 'SELECT id,username FROM users WHERE lower(username)=lower($1) AND password=$2;';
+        var q = 'SELECT id,username FROM users WHERE lower(username)=lower($1) AND password=crypt($2, password);';
         client.query(q, [username, password], function(err, result) {
             done();
 

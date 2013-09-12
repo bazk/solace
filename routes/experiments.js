@@ -37,14 +37,20 @@ exports.findById = function(req, res) {
 
             var exp = result.rows[0];
 
-            q = 'SELECT * FROM tests WHERE exp_id=$1 ORDER BY started_at DESC;';
+            q = 'SELECT \
+                    i.id, i.started_at, i.finished_at, i.num_runs, \
+                    i.comment, avg(r.progress) AS progress \
+                FROM instances i, runs r \
+                WHERE r.instance_id=i.id AND i.exp_id=$1 \
+                GROUP BY i.id \
+                ORDER BY i.started_at DESC;';
             client.query(q, [exp_id], function(err, result2) {
                 done();
 
                 if (err)
                     return res.send(500, {error: 'db_query_failed'});
 
-                exp.tests = result2.rows;
+                exp.instances = result2.rows;
                 res.send(exp);
             });
         });

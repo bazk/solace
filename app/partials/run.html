@@ -1,0 +1,15 @@
+<div class="content">
+
+    <div class="toolbar">
+    </div>
+
+    <div ng-highchart="chart">
+    </div>
+
+    <div ng-repeat="(name,dict) in results">
+        <h3>{{name}}</h3>
+        <div ng-repeat="(timestamp,value) in dict">
+            {{value}}
+        </div>
+    </div>
+</div>

@@ -29,4 +29,9 @@ angular.module('solace.directives', []).
                 scope.$apply();
             });
         }
+    }).
+    directive('ngHighchart', function() {
+        return function (scope, element, attrs) {
+            scope[attrs.ngHighchart] = scope[attrs.ngHighchart](element);
+        }
     });

@@ -151,27 +151,44 @@ angular.module('solace.controllers', []).
 
     controller('ExperimentCtrl', function ($scope, $routeParams, ExperimentFactory) {
         $scope.experiment = ExperimentFactory.get({id: $routeParams.id});
+    }).
 
-        // $scope.toggleSelection = function (test) {
-        //     test.sel = !test.sel;
-        //     $scope.selectAll = false;
-        // }
+    controller('InstanceCtrl', function ($scope, $routeParams, InstanceFactory) {
+        $scope.instance = InstanceFactory.get({id: $routeParams.id});
 
-        // $scope.selectAll = false;
-        // $scope.toggleSelectionAll = function () {
-        //     $scope.selectAll = !$scope.selectAll;
+        $scope.showParameterBox = false;
+        $scope.toggleParameterBox = function() {
+            $scope.showParameterBox = !$scope.showParameterBox;
+        };
+    }).
 
-        //     angular.forEach($scope.tests, function (test) {
-        //         test.sel = $scope.selectAll;
-        //     });
-        // }
+    controller('RunCtrl', function ($scope, $routeParams, RunFactory, ResultFactory) {
+        $scope.run = RunFactory.get({id: $routeParams.id}, function () {
+            angular.forEach($scope.run.resultVariables, function (res) {
+                if ((res.type == 'integer') || (res.type == 'real')) {
+                    var r = ResultFactory.get({id: $routeParams.id, name: res.name}, function () {
+                        $scope.chart.addSeries({
+                            name: res.name,
+                            data: (function () {
+                                var ret = [];
+                                for (var i=0; i<r.data.length; i++)
+                                    ret.push([new Date(r.data[i][0]).getTime(), parseFloat(r.data[i][1])]);
+                                return ret;
+                            })()
+                        });
+                    });
+                }
+            });
+        });
 
-        // $scope.removeSelected = function () {
-        //     angular.forEach($scope.tests, function(test) {
-        //         if (test.sel)
-        //             experimentsFactory.delete(test);
-        //     });
-        // }
+        $scope.chart = function (element) {
+            return new Highcharts.Chart({
+                chart: { renderTo: element[0] },
+                title: { text: 'Results' },
+                xAxis: { type: 'datetime' },
+                series: []
+            });
+        };
     }).
 
     controller('LoginCtrl', function ($scope, $rootScope, $location, SessionFactory) {
