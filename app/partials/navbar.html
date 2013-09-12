@@ -1,12 +1,21 @@
-<a class="brand" href="#">Solace</a>
-<i class="loading" ng-show="loading"></i>
-
 <div class="error slide ng-hide" ng-show="showError">
     <div class="error-inner error-danger">
         <button type="button" class="close" ng-click="closeError()">&times;</button>
         <strong>Oops!</strong> {{ errorMessage }}
     </div>
 </div>
+
+<div class="navbar-header">
+    <a class="navbar-brand" href="#">Solace</a>
+</div>
+
+<ul class="nav navbar-nav">
+    <li ng-repeat="item in menuitems" ng-class="item.active">
+        <a href="{{ item.link }}"><span ng-class="item.icon"></span> {{ item.title }}</a>
+    </li>
+</ul>
+
+<i class="navbar-loading" ng-show="loading"></i>
 
 <form class="navbar-form navbar-right" role="search">
     <div class="btn-group">

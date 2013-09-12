@@ -12,8 +12,51 @@ html {
     height:         100%;
 }
 
-.content {
-  margin-left: @menu-width;
+.main {
+  width: 100%;
+  height: 100%;
+}
+
+.instances {
+  width: 15%;
+  height: 100%;
+  float: left;
+
+  .title {
+    padding-left: 8px;
+  }
+}
+
+.instance-details {
+  width: 85%;
+  height: 100%;
+  float: left;
+}
+
+.list-group {
+  background-color: #f5f5f5;
+
+  border: 1px solid #e3e3e3;
+  border-width: 0 1px 1px 0px;
+
+  .list-group-item {
+    border: 1px solid #e3e3e3;
+    border-width: 1px 0 1px 0px;
+
+    &:first-child {
+      .border-top-radius(0);
+    }
+    &:last-child {
+      margin-bottom: 0;
+      .border-bottom-radius(0);
+    }
+
+    &.active {
+      color: #333;
+      background-color: #f5f5f5;
+      border-color: #e3e3e3;
+    }
+  }
 }
 
 .draggable {
@@ -99,8 +142,7 @@ html {
   }
 }
 
-.loading {
-  display: inline-block;
+.navbar-loading {
   width: 32px;
   height: 32px;
   margin: 8px 4px;

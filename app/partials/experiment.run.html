@@ -1,0 +1,16 @@
+<div class="content">
+
+    <div class="toolbar">
+        <div class="pull-left">
+        <button type="button" class="btn btn-default" ng-click="goBack()"><span class="glyphicon glyphicon-chevron-left"></span></button>
+        </div>
+    </div>
+
+    <div ng-highchart="chart">
+    </div>
+
+    <div ng-repeat="(idx,res) in results">
+        <h3>{{ res.timestamp }}</h3>
+        {{ res.value }}
+    </div>
+</div>

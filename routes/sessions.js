@@ -1,6 +1,3 @@
-var pg = require('pg');
-var config = require('../config.js')
-
 exports.login = function (req, res) {
     if (req.session.user_id)
         delete req.session.user_id;
@@ -15,23 +12,16 @@ exports.login = function (req, res) {
     var username = req.body.username,
         password = req.body.password;
 
-    pg.connect(config.conString, function(err, client, done) {
-        if (err)
-            return res.send(500, {loggedIn: false, error: 'db_connection_failed'});
+    req.db.query('SELECT id,username FROM users WHERE \
+      lower(username)=lower($1) AND password=crypt($2, password);',
+      [username, password], function(result) {
+        req.db.done();
 
-        var q = 'SELECT id,username FROM users WHERE lower(username)=lower($1) AND password=crypt($2, password);';
-        client.query(q, [username, password], function(err, result) {
-            done();
+        if (result.rows.length < 1)
+            return res.send(400, {loggedIn: false, error: 'invalid_username_password'});
 
-            if (err)
-                return res.send(500, {loggedIn: false, error: 'db_query_failed'});
-
-            if (result.rows.length < 1)
-                return res.send(400, {loggedIn: false, error: 'invalid_username_password'});
-
-            req.session.user_id = result.rows[0].id;
-            res.send(200, {loggedIn: true, userid: result.rows[0].id});
-        });
+        req.session.user_id = result.rows[0].id;
+        res.send(200, {loggedIn: true, userid: result.rows[0].id});
     });
 }
 

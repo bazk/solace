@@ -1,44 +1,12 @@
-<div class="content">
+<div class="list-group instances">
+    <h4 class="title">{{experiment.name}}</h4>
 
-    <div class="toolbar">
-    </div>
-
-    <table class="table table-selectable">
-        <thead>
-            <tr>
-                <th style="min-width: 40px;  width: 48px;" class="cb" ng-click="toggleSelectionAll()">
-                    <input type="checkbox" id="sel-all" ng-model="selectAll" />
-                    <label for="sel-all"></label>
-                </th>
-                <th style="min-width: 100px; width: 100px;">Instance</th>
-                <th style="min-width: 182px; width: 182px;">Started at</th>
-                <th style="min-width: 182px; width: 182px;">Finished at</th>
-                <th style="min-width: 232px; width: 232px;">Progress</th>
-                <th style="min-width: 316px;">Comment</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr ng-repeat="instance in experiment.instances" ng-click="toggleSelection(instance)">
-                <td class="cb">
-                    <input type="checkbox" id="sel-{{instance.id}}" ng-model="instance.sel" />
-                    <label for="sel-{{instance.id}}"></label>
-                </td>
-                <td>
-                    <a href="#/instance/{{instance.id}}"><b>{{instance.id}}</b></a> <span class="label label-important"></span>
-                </td>
-                <td>{{instance.started_at | date:'dd/MM/yyyy HH:mm:ss'}}</td>
-                <td>{{instance.finished_at | date:'dd/MM/yyyy HH:mm:ss'}}</td>
-                <td>
-                    <div class="progress">
-                        <div class="progress-bar" style="width: {{instance.progress*100}}%;"></div>
-                    </div>
-                </td>
-                <td>
-                    <div class="control-group marginfix">
-                        {{instance.comment}}
-                    </div>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+    <a ng-repeat="instance in experiment.instances" href="#/experiment/{{experiment.id}}/{{instance.id}}" class="list-group-item" ng-class="instance.active">
+        <div class="list-group-item-heading"><strong>{{ instance.id }}</strong> {{instance.comment}}</div>
+        <div class="progress">
+            <div class="progress-bar" style="width: {{instance.progress*100}}%;"></div>
+        </div>
+    </a>
 </div>
+
+<div ui-view class="instance-details"></div>

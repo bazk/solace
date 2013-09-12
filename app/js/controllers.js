@@ -19,45 +19,46 @@ angular.module('solace.controllers', []).
         });
     }).
 
-    controller('MenuLeftCtrl', function ($scope, $location, $route) {
-        $scope.menuitems = [
-            {title: "Dashboard", link: "#/dashboard", section: "dashboard", active: "", icon: "glyphicon glyphicon-stats"},
-            {title: "Experiments", link: "#/experiments", section: "experiments", active: "", icon: "glyphicon glyphicon-tasks"},
-        ];
-
-        function update_active() {
-            angular.forEach($scope.menuitems, function (item) {
-                if (item.section === $route.current.section)
-                    item.active = "active";
-                else
-                    item.active = "";
-            });
-        }
-        $scope.$on("$routeChangeSuccess", update_active);
-        update_active();
+    controller('MenuLeftCtrl', function ($scope, $location, $state) {
     }).
 
-    controller('NavBarCtrl', function ($scope, $rootScope, $location, SessionFactory) {
+    controller('NavBarCtrl', function ($scope, $rootScope, $state, $location, SessionFactory) {
         $scope.loading = false;
         $scope.errorMessage = "";
         $scope.showError = false;
+        $scope.menuitems = [
+            {title: "Dashboard", link: "#/dashboard", section: "dashboard", active: "", icon: "glyphicon glyphicon-stats"},
+            {title: "Experiments", link: "#/experiments", section: "experiments", active: "", icon: "glyphicon glyphicon-tasks"},
+            {title: "New Experiment", link: "#/experiments/new", section: "new-experiment", active: "", icon: "glyphicon glyphicon-plus"},
+        ];
 
-        $scope.$on("$routeChangeStart", function(event, next, current) {
-                $scope.loading = true;
-                $scope.showError = false;
+        function update_active() {
+            if ((typeof $state.current !== 'undefined') && ('section' in $state.current)) {
+                angular.forEach($scope.menuitems, function (item) {
+                    if (item.section === $state.current.section)
+                        item.active = "active";
+                    else
+                        item.active = "";
+                });
             }
-        );
-        $scope.$on("$routeChangeSuccess", function(event, current, previous) {
-                $scope.loading = false;
-                $scope.showError = false;
-            }
-        );
-        $scope.$on("$routeChangeError", function(event, current, previous, message) {
-                $scope.loading = false;
-                $scope.errorMessage = message;
-                $scope.showError = true;
-            }
-        );
+        }
+
+        $scope.$on("$stateChangeStart", function(event, next, current) {
+            $scope.loading = true;
+            $scope.showError = false;
+        });
+
+        $scope.$on("$stateChangeSuccess", function(event, current, previous) {
+            $scope.loading = false;
+            $scope.showError = false;
+            update_active();
+        });
+
+        $scope.$on("$stateChangeError", function(event, current, previous, message) {
+            $scope.loading = false;
+            $scope.errorMessage = message;
+            $scope.showError = true;
+        });
 
         $scope.closeError = function () {
             $scope.showError = false;
@@ -68,34 +69,30 @@ angular.module('solace.controllers', []).
                 $rootScope.$broadcast('$sessionUpdate', session);
             });
         }
+
+        update_active();
     }).
 
     controller('DashboardCtrl', function ($scope) {
     }).
 
-    controller('ExperimentsCtrl', function ($scope, $route, experiments, ExperimentsFactory) {
-        $scope.experiments = experiments;
+    controller('ExperimentCtrl', function ($scope, $state, $location, ExperimentFactory) {
+        $scope.experiment = ExperimentFactory.get({id: $state.params.expId}, update_active_instance);
 
-        $scope.toggleSelection = function (exp) {
-            exp.sel = !exp.sel;
-            $scope.selectAll = false;
+        function update_active_instance() {
+            if (typeof $state.params.instId !== 'undefined' ) {
+                angular.forEach($scope.experiment.instances, function (inst) {
+                    if (inst.id == $state.params.instId)
+                        inst.active = "active";
+                    else
+                        inst.active = "";
+                });
+            }
         }
 
-        $scope.selectAll = false;
-        $scope.toggleSelectionAll = function () {
-            $scope.selectAll = !$scope.selectAll;
-
-            angular.forEach($scope.experiments, function (exp) {
-                exp.sel = $scope.selectAll;
-            });
-        }
-
-        $scope.removeSelected = function () {
-            angular.forEach($scope.experiments, function(exp) {
-                if (exp.sel)
-                    experimentsFactory.delete(exp);
-            });
-        }
+        $scope.$on("$stateChangeSuccess", function(event, current, previous) {
+            update_active_instance();
+        });
 
         $scope.new = {
             doShow: false,
@@ -138,7 +135,7 @@ angular.module('solace.controllers', []).
                 ExperimentsFactory.save(exp,
                     function (success) {
                         $scope.new.hide();
-                        $route.reload();
+                        $state.reload();
                     }, function (error) {
                         $scope.new.error = reason;
                         $scope.new.doShowError = true;
@@ -149,24 +146,15 @@ angular.module('solace.controllers', []).
         };
     }).
 
-    controller('ExperimentCtrl', function ($scope, $routeParams, ExperimentFactory) {
-        $scope.experiment = ExperimentFactory.get({id: $routeParams.id});
+    controller('InstanceCtrl', function ($scope, $stateParams, InstanceFactory) {
+        $scope.instance = InstanceFactory.get({id: $stateParams.instId});
     }).
 
-    controller('InstanceCtrl', function ($scope, $routeParams, InstanceFactory) {
-        $scope.instance = InstanceFactory.get({id: $routeParams.id});
-
-        $scope.showParameterBox = false;
-        $scope.toggleParameterBox = function() {
-            $scope.showParameterBox = !$scope.showParameterBox;
-        };
-    }).
-
-    controller('RunCtrl', function ($scope, $routeParams, RunFactory, ResultFactory) {
-        $scope.run = RunFactory.get({id: $routeParams.id}, function () {
+    controller('RunCtrl', function ($scope, $stateParams, RunFactory, ResultFactory) {
+        $scope.run = RunFactory.get({id: $stateParams.runId}, function () {
             angular.forEach($scope.run.resultVariables, function (res) {
                 if ((res.type == 'integer') || (res.type == 'real')) {
-                    var r = ResultFactory.get({id: $routeParams.id, name: res.name}, function () {
+                    var r = ResultFactory.get({id: $stateParams.runId, name: res.name}, function () {
                         $scope.chart.addSeries({
                             name: res.name,
                             data: (function () {
@@ -178,8 +166,19 @@ angular.module('solace.controllers', []).
                         });
                     });
                 }
+                else {
+                    var r = ResultFactory.get({id: $stateParams.runId, name: res.name}, function () {
+                        for (var i=0; i<r.data.length; i++)
+                            $scope.results.push({
+                                timestamp: r.data[i][0],
+                                value: r.data[i][1]
+                            });
+                    });
+                }
             });
         });
+
+        $scope.results = [];
 
         $scope.chart = function (element) {
             return new Highcharts.Chart({
@@ -188,6 +187,10 @@ angular.module('solace.controllers', []).
                 xAxis: { type: 'datetime' },
                 series: []
             });
+        };
+
+        $scope.goBack = function () {
+            window.history.back();
         };
     }).
 
