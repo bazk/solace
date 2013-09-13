@@ -11,10 +11,12 @@
   ],
   "dependencies": {
     "angular": "~1.2.0",
+    "angular-animate": "~1.2.0-rc.2",
+    "angular-resource": "~1.0.8",
+    "angular-ui-router": "~0.2.0",
     "jquery": "~2.0.3",
-    "jquery-ui": "~1.10.3",
     "bootstrap": "~3.0.0",
-    "angular-ui-router": "~0.2.0"
+    "highcharts": "~3.0.5"
   },
   "authors": [
     "Eduardo Luis Buratti"
