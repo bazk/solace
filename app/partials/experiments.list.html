@@ -1,0 +1,9 @@
+<div class="experiments-container">
+    <a class="experiments-buttom" ng-repeat="exp in experiments" href="#/experiment/{{ exp.id }}">
+        <h4>{{ exp.name }}</h4>
+    </a>
+    <a class="experiments-buttom" href="#/experiments/new">
+        <h4>New Experiment</h4>
+        <span class="glyphicon glyphicon-plus"></span>
+    </a>
+</div>

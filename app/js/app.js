@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('solace', ['ngRoute', 'ngAnimate', 'ngResource', 'ui.router', 'solace.controllers', 'solace.directives', 'solace.factories']).
+angular.module('solace', ['ngAnimate', 'ngResource', 'ui.router', 'solace.controllers', 'solace.directives', 'solace.factories']).
     config(function($stateProvider, $httpProvider) {
         $stateProvider.
             state('login', {
@@ -9,16 +9,27 @@ angular.module('solace', ['ngRoute', 'ngAnimate', 'ngResource', 'ui.router', 'so
                 controller: 'LoginCtrl'
             }).
             state('dashboard', {
-                url: '/dashboard',
+                url: '/',
                 section: 'dashboard',
                 templateUrl: 'partials/dashboard.html',
                 controller: 'DashboardCtrl'
             }).
             state('experiments', {
+                abstract: true,
                 url: '/experiments',
                 section: 'experiments',
                 templateUrl: 'partials/experiments.html',
                 controller: 'ExperimentsCtrl',
+            }).
+            state('experiments.list', {
+                url: '/list',
+                section: 'experiments',
+                templateUrl: 'partials/experiments.list.html',
+            }).
+            state('experiments.new', {
+                url: '/new',
+                section: 'experiments',
+                templateUrl: 'partials/experiments.new.html',
             }).
             state('experiment', {
                 url: '/experiment/{expId:[0-9]*}',

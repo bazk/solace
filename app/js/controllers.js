@@ -2,14 +2,17 @@
 
 angular.module('solace.controllers', []).
     controller('MainCtrl', function ($scope, $rootScope, $location, SessionFactory) {
-        $scope.session = SessionFactory.get(function (session){
+        $scope.session = SessionFactory.get(function (session) {
             $rootScope.$broadcast('$sessionUpdate', session);
         });
 
         $scope.$on('$sessionUpdate', function (e, newSession) {
             $scope.session = newSession;
-            if (!$scope.session.loggedIn)
+
+            if (!newSession.loggedIn) {
+                $rootScope.return_path = $location.path();
                 $location.path('/login');
+            }
         });
 
         $scope.$on('$accessDenied', function (e) {
@@ -19,7 +22,35 @@ angular.module('solace.controllers', []).
         });
     }).
 
-    controller('MenuLeftCtrl', function ($scope, $location, $state) {
+    controller('LoginCtrl', function ($scope, $rootScope, $location, SessionFactory) {
+        $scope.user = {};
+        $scope.showLoading = false;
+        $scope.showError = false;
+        $scope.errorMessage = "";
+
+        if ($scope.session.loggedIn)
+            $location.path('/');
+
+        $scope.login = function () {
+            $scope.showLoading = true;
+            $scope.showError = false;
+
+            SessionFactory.save($scope.user, function (session) {
+                $scope.showLoading = false;
+
+                if (session.error) {
+                    $scope.errorMessage = session.error;
+                    $scope.showError = true;
+                    return;
+                }
+
+                $rootScope.$broadcast('$sessionUpdate', session);
+                if ((typeof $rootScope.return_path === 'undefined') || ($rootScope.return_path === '/login'))
+                    $location.path('/');
+                else
+                    $location.path($rootScope.return_path);
+            });
+        };
     }).
 
     controller('NavBarCtrl', function ($scope, $rootScope, $state, $location, SessionFactory) {
@@ -28,7 +59,7 @@ angular.module('solace.controllers', []).
         $scope.showError = false;
         $scope.menuitems = [
             {title: "Dashboard", link: "#/dashboard", section: "dashboard", active: "", icon: "glyphicon glyphicon-stats"},
-            {title: "Experiments", link: "#/experiments", section: "experiments", active: "", icon: "glyphicon glyphicon-tasks"},
+            {title: "Experiments", link: "#/experiments/list", section: "experiments", active: "", icon: "glyphicon glyphicon-tasks"},
             {title: "New Experiment", link: "#/experiments/new", section: "new-experiment", active: "", icon: "glyphicon glyphicon-plus"},
         ];
 
@@ -43,12 +74,12 @@ angular.module('solace.controllers', []).
             }
         }
 
-        $scope.$on("$stateChangeStart", function(event, next, current) {
+        $scope.$on("$beginLoading", function (e) {
             $scope.loading = true;
             $scope.showError = false;
         });
 
-        $scope.$on("$stateChangeSuccess", function(event, current, previous) {
+        $scope.$on("$doneLoading", function (e, error) {
             $scope.loading = false;
             $scope.showError = false;
             update_active();
@@ -76,8 +107,17 @@ angular.module('solace.controllers', []).
     controller('DashboardCtrl', function ($scope) {
     }).
 
-    controller('ExperimentCtrl', function ($scope, $state, $location, ExperimentFactory) {
-        $scope.experiment = ExperimentFactory.get({id: $state.params.expId}, update_active_instance);
+    controller('ExperimentsCtrl', function ($scope, ExperimentsFactory) {
+        $scope.experiments = ExperimentsFactory.query();
+    }).
+
+    controller('ExperimentCtrl', function ($scope, $rootScope, $state, $location, ExperimentFactory) {
+        $rootScope.$broadcast('$beginLoading');
+
+        $scope.experiment = ExperimentFactory.get({id: $state.params.expId}, function () {
+            $rootScope.$broadcast('$doneLoading');
+            update_active_instance();
+        });
 
         function update_active_instance() {
             if (typeof $state.params.instId !== 'undefined' ) {
@@ -93,64 +133,19 @@ angular.module('solace.controllers', []).
         $scope.$on("$stateChangeSuccess", function(event, current, previous) {
             update_active_instance();
         });
-
-        $scope.new = {
-            doShow: false,
-            doShowLoading: false,
-            doShowError: false,
-
-            name: {value: "", class: ""},
-            desc: {value: "", class: ""},
-
-            error: "",
-
-            show: function () {
-                $scope.new.name.value = "";
-                $scope.new.name.class = "";
-                $scope.new.desc.value = "";
-                $scope.new.desc.class = "";
-                $scope.new.doShowError = false;
-                $scope.new.doShowLoading = false;
-                $scope.new.doShow = true;
-            },
-            hide: function () {
-                $scope.new.doShow = false;
-            },
-            save: function () {
-                $scope.new.doShowError = false;
-                $scope.new.doShowLoading = true;
-
-                if ($scope.new.name.value === '') {
-                    $scope.new.name.class = "has-error";
-                    $scope.new.doShowLoading = false;
-                    return;
-                }
-                $scope.new.name.class = "";
-
-                var exp = {
-                    name: $scope.new.name.value,
-                    description: $scope.new.desc.value
-                };
-
-                ExperimentsFactory.save(exp,
-                    function (success) {
-                        $scope.new.hide();
-                        $state.reload();
-                    }, function (error) {
-                        $scope.new.error = reason;
-                        $scope.new.doShowError = true;
-                        $scope.new.doShowLoading = false;
-                    }
-                );
-            }
-        };
     }).
 
-    controller('InstanceCtrl', function ($scope, $stateParams, InstanceFactory) {
-        $scope.instance = InstanceFactory.get({id: $stateParams.instId});
+    controller('InstanceCtrl', function ($scope, $rootScope, $stateParams, InstanceFactory) {
+        $rootScope.$broadcast('$beginLoading');
+
+        $scope.instance = InstanceFactory.get({id: $stateParams.instId}, function () {
+            $rootScope.$broadcast('$doneLoading');
+        });
     }).
 
-    controller('RunCtrl', function ($scope, $stateParams, RunFactory, ResultFactory) {
+    controller('RunCtrl', function ($scope, $rootScope, $stateParams, RunFactory, ResultFactory) {
+        $rootScope.$broadcast('$beginLoading');
+
         $scope.run = RunFactory.get({id: $stateParams.runId}, function () {
             angular.forEach($scope.run.resultVariables, function (res) {
                 if ((res.type == 'integer') || (res.type == 'real')) {
@@ -176,6 +171,8 @@ angular.module('solace.controllers', []).
                     });
                 }
             });
+
+            $rootScope.$broadcast('$doneLoading');
         });
 
         $scope.results = [];
@@ -191,27 +188,5 @@ angular.module('solace.controllers', []).
 
         $scope.goBack = function () {
             window.history.back();
-        };
-    }).
-
-    controller('LoginCtrl', function ($scope, $rootScope, $location, SessionFactory) {
-        $scope.user = {};
-        $scope.showLoading = false;
-        $scope.showError = false;
-        $scope.errorMessage = "";
-
-        $scope.login = function () {
-            $scope.showLoading = true;
-            $scope.showError = false;
-
-            SessionFactory.save($scope.user, function(session) {
-                $rootScope.$broadcast('$sessionUpdate', session);
-                $location.path('/');
-                $scope.showLoading = false;
-            }, function(error) {
-                $scope.errorMessage = error;
-                $scope.showError = true;
-                $scope.showLoading = false;
-            });
         };
     });
