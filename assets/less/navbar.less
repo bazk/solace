@@ -1,6 +1,11 @@
 .navbar-solace {
   margin-bottom: 0;
 
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+
   border-color: @navbar-default-border;
   border-radius: 0;
 
@@ -64,17 +69,6 @@
     }
   }
 
-  .navbar-toggle {
-    border-color: @navbar-default-toggle-border-color;
-    &:hover,
-    &:focus {
-      background-color: @navbar-default-toggle-hover-bg;
-    }
-    .icon-bar {
-      background-color: @navbar-default-toggle-icon-bar-bg;
-    }
-  }
-
   .navbar-collapse,
   .navbar-form {
     border-color: darken(@navbar-default-bg, 7%);
@@ -105,37 +99,6 @@
     > .dropdown > a .caret {
       border-top-color: @navbar-default-link-color;
       border-bottom-color: @navbar-default-link-color;
-    }
-
-
-    @media (max-width: @screen-xs-max) {
-      // Dropdowns get custom display when collapsed
-      .open .dropdown-menu {
-        > li > a {
-          color: @navbar-default-link-color;
-          &:hover,
-          &:focus {
-            color: @navbar-default-link-hover-color;
-            background-color: @navbar-default-link-hover-bg;
-          }
-        }
-        > .active > a {
-          &,
-          &:hover,
-          &:focus {
-            color: @navbar-default-link-active-color;
-            background-color: @navbar-default-link-active-bg;
-          }
-        }
-        > .disabled > a {
-          &,
-          &:hover,
-          &:focus {
-            color: @navbar-default-link-disabled-color;
-            background-color: @navbar-default-link-disabled-bg;
-          }
-        }
-      }
     }
   }
 

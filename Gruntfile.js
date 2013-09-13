@@ -5,7 +5,7 @@ module.exports = function (grunt) {
                 files: [{
                     expand: true,
                     cwd: 'assets/less',
-                    src: ['[!_]*.less'],
+                    src: ['main.less'],
                     dest: 'app/css',
                     ext: '.css',
                 }]
