@@ -60,7 +60,7 @@ exports.connect = function (req, res, next) {
                         return;
                     }
 
-                    cb(function commit(cb) {
+                    cb(function (commit_cb) {
                         client.query('COMMIT;', function (err, result) {
                             if (err) {
                                 console.log(err);
@@ -68,9 +68,9 @@ exports.connect = function (req, res, next) {
                                 res.send(500, {error: 'db_query_failed'});
                                 return;
                             }
-                            cb();
+                            commit_cb();
                         });
-                    }, function rollback(cb) {
+                    }, function (rollback_cb) {
                         client.query('ROLLBACK;', function (err, result) {
                             if (err) {
                                 console.log(err);
@@ -78,7 +78,7 @@ exports.connect = function (req, res, next) {
                                 res.send(500, {error: 'db_query_failed'});
                                 return;
                             }
-                            cb();
+                            rollback_cb();
                         });
                     });
                 });

@@ -35,7 +35,7 @@ exports.insert = function(req, res) {
             var inst_id = result.rows[0].id;
 
             var stream1 = req.db.copyFrom('COPY parameters (instance_id, name, value, type) FROM STDIN WITH CSV;', function () {
-                var stream2 = req.db.client.copyFrom("COPY runs (instance_id) FROM STDIN WITH CSV;", function () {
+                var stream2 = req.db.copyFrom("COPY runs (instance_id) FROM STDIN WITH CSV;", function () {
                     req.db.query('SELECT id FROM runs WHERE instance_id=$1 ORDER BY id;', [inst_id], function(result) {
                         commit(function () {
                             req.db.done();
