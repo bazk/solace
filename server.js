@@ -42,4 +42,8 @@ app.post('/api/run/:id', json, sessions.auth, db.connect, runs.update);
 app.post('/api/run/:id/done', json, sessions.auth, db.connect, runs.done);
 app.post('/api/run/:id/cancel', json, sessions.auth, db.connect, runs.cancel);
 
+app.get('/api/run/:id/files', json, sessions.auth, db.connect, runs.findFilesByRunId);
+app.post('/api/run/:id/files', json, sessions.auth, db.connect, runs.upload);
+app.get('/api/run/:id/files/:file', json, sessions.auth, db.connect, runs.download);
+
 app.listen(3000);

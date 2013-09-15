@@ -1,3 +1,5 @@
+var fs = require('fs');
+
 exports.findById = function(req, res) {
     if (typeof req.params.id === 'undefined')
         return res.send(400, {error: 'missing_parameters'});
@@ -103,4 +105,53 @@ exports.done = function(req, res) {
 
 exports.cancel = function(req, res) {
     res.send(200);
+}
+
+exports.upload = function(req, res) {
+    if (typeof req.params.id === 'undefined')
+        return res.send(400, {error: 'missing_parameters'});
+
+    var run_id = parseInt(req.params.id);
+
+    fs.readFile(req.files.file.path, 'hex', function (err, data) {
+        data = '\\x' + data;
+
+        req.db.query('INSERT INTO files (run_id, data) VALUES ($1, $2);', [run_id, data], function(result) {
+            req.db.done();
+            res.send(200);
+        });
+    });
+}
+
+exports.download = function(req, res) {
+    if (typeof req.params.id === 'undefined')
+        return res.send(400, {error: 'missing_parameters'});
+
+    if (typeof req.params.file === 'undefined')
+        return res.send(400, {error: 'missing_parameters'});
+
+    var run_id = parseInt(req.params.id),
+        file_id = parseInt(req.params.file);
+
+    req.db.query('SELECT * FROM files WHERE run_id=$1 AND id=$2;', [run_id, file_id], function(result) {
+        req.db.done();
+
+        if (result.rows.length < 1)
+            return res.send(404);
+
+        res.type('bin');
+        res.send(200, new Buffer(result.rows[0].data, 'binary'));
+    });
+}
+
+exports.findFilesByRunId = function(req, res) {
+    if (typeof req.params.id === 'undefined')
+        return res.send(400, {error: 'missing_parameters'});
+
+    var run_id = parseInt(req.params.id);
+
+    req.db.query('SELECT id,inserted_at FROM files WHERE run_id=$1;', [run_id], function(result) {
+        req.db.done();
+        res.json(200, result.rows);
+    });
 }
