@@ -94,6 +94,20 @@ class Run(object):
             except:
                 raise Exception('Unknown error at posting progress.')
 
+    def upload(self, filename):
+        r = requests.post(self.experiment.api_url+'/run/'+str(self.id)+'/files',
+                          files={
+                            'file': open(filename, 'rb')
+                          },
+                          cookies=self.experiment.cookies)
+
+        if r.status_code != 200:
+            try:
+                res = r.json()
+                raise Exception(res['error']) # TODO: translate error "key" into a user friendly message
+            except:
+                raise Exception('Unknown error uploading file.')
+
 class Instance(object):
     def __init__(self, experiment, instance_id):
         self.id = instance_id
