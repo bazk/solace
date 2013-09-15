@@ -107,3 +107,11 @@ CREATE TABLE chart_series (
     y               TEXT NOT NULL,
     y_source        source_type NOT NULL,
 );
+
+
+CREATE TABLE files (
+    id              SERIAL PRIMARY KEY,
+    run_id          INTEGER NOT NULL REFERENCES runs(id),
+    inserted_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    data            BYTEA
+);
