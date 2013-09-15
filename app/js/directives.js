@@ -34,4 +34,9 @@ angular.module('solace.directives', []).
         return function (scope, element, attrs) {
             scope[attrs.ngHighchart] = scope[attrs.ngHighchart](element);
         }
+    }).
+    directive('srsViewer', function() {
+        return function (scope, element, attrs) {
+            scope[attrs.srsViewer].bind(element);
+        }
     });

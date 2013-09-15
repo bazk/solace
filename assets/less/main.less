@@ -415,3 +415,65 @@ a:focus {
 .rollup.ng-leave.ng-leave-active > div {
  margin-top: -100px;
 }
+
+.viewer {
+  width: 1280px;
+  position: relative;
+  top: 30px;
+  left: 50%;
+  margin-left: -640px;
+
+  .box-shadow(0 3px 3px rgba(0,0,0,.1));
+
+  .controls {
+    position: relative;
+    height: 38px;
+    margin-top: -43px;
+    padding-top: 9px;
+    background-color: #a0a0a0;
+    opacity: 0.75;
+
+    button {
+      float: left;
+      width: 38px;
+      font-size: 1.8em;
+      padding: 0;
+      background: none;
+      border: none;
+      margin-left: 2px;
+      margin-top: -7px;
+
+      &:hover,
+      &:focus {
+        color: #efefef;
+        cursor: default;
+      }
+
+      &:active,
+      &.active {
+        outline: 0;
+        color: #e0e0e0;
+        background-image: none;
+        .box-shadow(none);
+      }
+    }
+
+    .clock {
+      float: left;
+      font-size: 85%;
+      font-weight: bold;
+      margin: 3px 6px;
+      color: white;
+    }
+
+    .progress {
+      margin-left: 148px;
+      margin-right: 10px;
+
+      .progress-bar {
+        -webkit-transition: width 1s linear;
+                transition: width 1s linear;
+      }
+    }
+  }
+}

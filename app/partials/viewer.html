@@ -1,0 +1,11 @@
+<div class="viewer">
+    <canvas width="1280" height="720" srs-viewer="viewer"></canvas>
+
+    <div class="controls">
+        <button type="button" class="btn btn-primary" ng-click="play()"><span class="glyphicon" ng-class="playPauseIcon"></span></button>
+        <span class="clock">{{ clock | secondsToTime }} / {{ secondsLength | secondsToTime }}</span>
+        <div class="progress">
+            <div class="progress-bar" role="progressbar" style="width: {{ progress * 100 }}%;"></div>
+        </div>
+    </div>
+</div>

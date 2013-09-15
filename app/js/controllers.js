@@ -58,9 +58,8 @@ angular.module('solace.controllers', []).
         $scope.errorMessage = "";
         $scope.showError = false;
         $scope.menuitems = [
-            {title: "Dashboard", link: "#/dashboard", section: "dashboard", active: "", icon: "glyphicon glyphicon-stats"},
-            {title: "Experiments", link: "#/experiments/list", section: "experiments", active: "", icon: "glyphicon glyphicon-tasks"},
-            {title: "New Experiment", link: "#/experiments/new", section: "new-experiment", active: "", icon: "glyphicon glyphicon-plus"},
+            {title: "Experiments", link: "#/experiments", section: "experiments", active: "", icon: "glyphicon glyphicon-tasks"},
+            {title: "Viewer", link: "#/viewer", section: "viewer", active: "", icon: "glyphicon glyphicon-stats"},
         ];
 
         function update_active() {
@@ -77,12 +76,12 @@ angular.module('solace.controllers', []).
         $scope.$on("$beginLoading", function (e) {
             $scope.loading = true;
             $scope.showError = false;
+            update_active();
         });
 
         $scope.$on("$doneLoading", function (e, error) {
             $scope.loading = false;
             $scope.showError = false;
-            update_active();
         });
 
         $scope.$on("$stateChangeError", function(event, current, previous, message) {
@@ -104,11 +103,54 @@ angular.module('solace.controllers', []).
         update_active();
     }).
 
-    controller('DashboardCtrl', function ($scope) {
+    controller('ViewerCtrl', function ($scope, $rootScope, $state, $http) {
+        $rootScope.$broadcast('$beginLoading');
+
+        $scope.viewer = new srs2d.Viewer();
+        $scope.progress = 0;
+        $scope.clock = 0;
+        $scope.secondsLength = 0;
+        $scope.playPauseIcon = "glyphicon-play";
+
+        $scope.viewer.onClockUpdate(function (clock) {
+            $scope.$apply(function () {
+                $scope.clock = clock;
+                $scope.progress = clock / $scope.viewer.secondsLength;
+            });
+        });
+
+        if ((typeof $state.params.runId !== 'undefined') && (typeof $state.params.fileId !== 'undefined')) {
+            $http.get('/api/run/'+$state.params.runId+'/files/'+$state.params.fileId, {responseType: "arraybuffer"}).success(function (buffer) {
+                $scope.viewer.load(buffer);
+                $scope.secondsLength = $scope.viewer.secondsLength;
+                $rootScope.$broadcast('$doneLoading');
+            });
+        }
+
+        var playing = false;
+        $scope.play = function () {
+            if (!playing) {
+                $scope.viewer.play();
+                $scope.playPauseIcon = "glyphicon-pause";
+            }
+            else {
+                $scope.viewer.stop();
+                $scope.playPauseIcon = "glyphicon-play";
+            }
+            playing = !playing;
+        };
     }).
 
-    controller('ExperimentsCtrl', function ($scope, ExperimentsFactory) {
-        $scope.experiments = ExperimentsFactory.query();
+    controller('DashboardCtrl', function ($scope, $rootScope) {
+        $rootScope.$broadcast('$beginLoading');
+        $rootScope.$broadcast('$doneLoading');
+    }).
+
+    controller('ExperimentsCtrl', function ($scope, $rootScope, ExperimentsFactory) {
+        $rootScope.$broadcast('$beginLoading');
+        $scope.experiments = ExperimentsFactory.query(function () {
+            $rootScope.$broadcast('$doneLoading');
+        });
     }).
 
     controller('ExperimentCtrl', function ($scope, $rootScope, $state, $location, ExperimentFactory) {
@@ -143,8 +185,10 @@ angular.module('solace.controllers', []).
         });
     }).
 
-    controller('RunCtrl', function ($scope, $rootScope, $stateParams, RunFactory, ResultFactory) {
+    controller('RunCtrl', function ($scope, $rootScope, $stateParams, RunFactory, ResultFactory, FileFactory) {
         $rootScope.$broadcast('$beginLoading');
+
+        $scope.files = FileFactory.query({id: $stateParams.runId});
 
         $scope.run = RunFactory.get({id: $stateParams.runId}, function () {
             angular.forEach($scope.run.resultVariables, function (res) {

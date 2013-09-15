@@ -1,18 +1,37 @@
 'use strict';
 
-angular.module('solace', ['ngAnimate', 'ngResource', 'ui.router', 'solace.controllers', 'solace.directives', 'solace.factories']).
+angular.module('solace', ['ngAnimate', 'ngResource', 'ui.router', 'solace.controllers', 'solace.directives', 'solace.factories', 'solace.filters']).
     config(function($stateProvider, $httpProvider) {
         $stateProvider.
+            state('root', {
+                url: '',
+                controller: function ($scope, $location) {
+                    $location.path("/experiments/list");
+                }
+            }).
             state('login', {
                 url: "/login",
                 templateUrl: 'partials/login.html',
                 controller: 'LoginCtrl'
             }).
-            state('dashboard', {
-                url: '/',
-                section: 'dashboard',
-                templateUrl: 'partials/dashboard.html',
-                controller: 'DashboardCtrl'
+            state('viewer', {
+                abstract: true,
+                url: '/viewer',
+                section: 'viewer',
+                templateUrl: 'partials/viewer.html',
+                controller: 'ViewerCtrl'
+            }).
+            state('viewer.list', {
+                url: '',
+                section: 'viewer',
+                templateUrl: 'partials/viewer.html',
+                controller: 'ViewerCtrl'
+            }).
+            state('viewer.view', {
+                url: '/{runId:[0-9]*}/{fileId:[0-9]*}',
+                section: 'viewer',
+                templateUrl: 'partials/viewer.html',
+                controller: 'ViewerCtrl'
             }).
             state('experiments', {
                 abstract: true,
@@ -22,7 +41,7 @@ angular.module('solace', ['ngAnimate', 'ngResource', 'ui.router', 'solace.contro
                 controller: 'ExperimentsCtrl',
             }).
             state('experiments.list', {
-                url: '/list',
+                url: '',
                 section: 'experiments',
                 templateUrl: 'partials/experiments.list.html',
             }).

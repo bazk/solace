@@ -23,6 +23,10 @@ angular.module('solace.factories', []).
 
     factory('ResultFactory', function($resource) {
         return $resource('/api/run/:id/result/:name');
+    }).
+
+    factory('FileFactory', function($resource) {
+        return $resource('/api/run/:id/files');
     });
 
     //     return {
