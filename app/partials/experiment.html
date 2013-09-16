@@ -1,8 +1,8 @@
 <div class="list-group instances">
     <h4 class="title">{{experiment.name}}</h4>
 
-    <a ng-repeat="instance in experiment.instances" href="#/experiment/{{experiment.id}}/{{instance.id}}" class="list-group-item" ng-class="instance.active">
-        <div class="list-group-item-heading"><strong>{{ instance.id }}</strong> {{instance.comment}}</div>
+    <a ng-repeat="instance in experiment.instances" href="#/experiment/{{experiment.name}}/{{instance.id}}" class="list-group-item" ng-class="instance.active">
+        <div class="list-group-item-heading"><strong>{{ instance.id | limitTo:8 }}</strong> {{instance.comment}}</div>
         <div class="progress">
             <div class="progress-bar" style="width: {{instance.progress*100}}%;"></div>
         </div>

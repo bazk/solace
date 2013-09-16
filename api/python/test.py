@@ -5,7 +5,7 @@ import solace
 import random
 import time
 
-NUM_RUNS = 5
+NUM_RUNS = 2
 NUM_STEPS = 20
 PARAM1 = 5.3
 PARAM2 = [ 5, 4, 2 ]
@@ -17,15 +17,17 @@ def step(var1, var2):
     var1 += random.uniform(0,1)
     var2 += random.uniform(0,1.5)
 
-    time.sleep(10)
+    time.sleep(5)
 
     return var1, var2
 
 if __name__=="__main__":
-    exp = solace.get_experiment('solace://localhost:3000/1', 'admin', '123456')
+    exp = solace.get_experiment('solace://lys:3000/test', 'admin', 'a0358070')
     inst = exp.create_instance(NUM_RUNS, {'PARAM1': PARAM1, 'PARAM2': PARAM2, 'PARAM3': PARAM3, 'PARAM4': PARAM4, 'PARAM5': PARAM5, 'NUM_STEPS': NUM_STEPS})
 
     for run in inst.runs:
+        run.begin()
+
         # the variables we are optimizing (just as an example)
         var1 = 0
         var2 = 0

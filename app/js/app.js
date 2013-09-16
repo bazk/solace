@@ -28,7 +28,7 @@ angular.module('solace', ['ngAnimate', 'ngResource', 'ui.router', 'solace.contro
                 controller: 'ViewerCtrl'
             }).
             state('viewer.view', {
-                url: '/{runId:[0-9]*}/{fileId:[0-9]*}',
+                url: '/:instId/:runId/:filename',
                 section: 'viewer',
                 templateUrl: 'partials/viewer.html',
                 controller: 'ViewerCtrl'
@@ -51,19 +51,19 @@ angular.module('solace', ['ngAnimate', 'ngResource', 'ui.router', 'solace.contro
                 templateUrl: 'partials/experiments.new.html',
             }).
             state('experiment', {
-                url: '/experiment/{expId:[0-9]*}',
+                url: '/experiment/:expName',
                 section: 'experiments',
                 templateUrl: 'partials/experiment.html',
                 controller: 'ExperimentCtrl',
             }).
             state('experiment.instance', {
-                url: '/{instId:[0-9]*}',
+                url: '/:instId',
                 section: 'experiments',
                 templateUrl: 'partials/experiment.instance.html',
                 controller: 'InstanceCtrl'
             }).
             state('experiment.run', {
-                url: '/{instId:[0-9]*}/{runId:[0-9]*}',
+                url: '/:instId/:runId',
                 section: 'experiments',
                 templateUrl: 'partials/experiment.run.html',
                 controller: 'RunCtrl'

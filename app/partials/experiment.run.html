@@ -10,7 +10,7 @@
     </div>
 
     <div class="list-group">
-        <a ng-repeat="file in files" href="#/viewer/{{ run.id }}/{{ file.id }}" class="list-group-item">{{ file.id }} ({{ file.inserted_at |  date:'dd/MM/yyyy HH:mm:ss' }})</a>
+        <a ng-repeat="file in files" href="#/viewer/{{ instance.id }}/{{ run.id }}/{{ file.name }}" class="list-group-item">{{ file.id }} ({{ file.inserted_at |  date:'dd/MM/yyyy HH:mm:ss' }})</a>
     </div>
 
     <div ng-repeat="(idx,res) in results">

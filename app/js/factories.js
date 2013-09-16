@@ -10,7 +10,7 @@ angular.module('solace.factories', []).
     }).
 
     factory('ExperimentFactory', function($resource) {
-        return $resource('/api/experiment/:id');
+        return $resource('/api/experiment/:name');
     }).
 
     factory('InstanceFactory', function($resource) {
@@ -18,15 +18,15 @@ angular.module('solace.factories', []).
     }).
 
     factory('RunFactory', function($resource) {
-        return $resource('/api/run/:id');
+        return $resource('/api/instance/:instId/:runId');
     }).
 
     factory('ResultFactory', function($resource) {
-        return $resource('/api/run/:id/result/:name');
+        return $resource('/api/instance/:instId/:runId/result/:name');
     }).
 
     factory('FileFactory', function($resource) {
-        return $resource('/api/run/:id/files');
+        return $resource('/api/instance/:instId/:runId/files');
     });
 
     //     return {

@@ -119,8 +119,10 @@ angular.module('solace.controllers', []).
             });
         });
 
-        if ((typeof $state.params.runId !== 'undefined') && (typeof $state.params.fileId !== 'undefined')) {
-            $http.get('/api/run/'+$state.params.runId+'/files/'+$state.params.fileId, {responseType: "arraybuffer"}).success(function (buffer) {
+        console.log($state.params);
+
+        if ((typeof $state.params.instId !== 'undefined') && (typeof $state.params.runId !== 'undefined')) {
+            $http.get('/api/instance/'+$state.params.instId+'/'+$state.params.runId+'/files/'+$state.params.filename, {responseType: "arraybuffer"}).success(function (buffer) {
                 $scope.viewer.load(buffer);
                 $scope.secondsLength = $scope.viewer.secondsLength;
                 $rootScope.$broadcast('$doneLoading');
@@ -156,7 +158,7 @@ angular.module('solace.controllers', []).
     controller('ExperimentCtrl', function ($scope, $rootScope, $state, $location, ExperimentFactory) {
         $rootScope.$broadcast('$beginLoading');
 
-        $scope.experiment = ExperimentFactory.get({id: $state.params.expId}, function () {
+        $scope.experiment = ExperimentFactory.get({name: $state.params.expName}, function () {
             $rootScope.$broadcast('$doneLoading');
             update_active_instance();
         });
@@ -185,15 +187,17 @@ angular.module('solace.controllers', []).
         });
     }).
 
-    controller('RunCtrl', function ($scope, $rootScope, $stateParams, RunFactory, ResultFactory, FileFactory) {
+    controller('RunCtrl', function ($scope, $rootScope, $state, RunFactory, ResultFactory, FileFactory) {
         $rootScope.$broadcast('$beginLoading');
 
-        $scope.files = FileFactory.query({id: $stateParams.runId});
+        $scope.instance = {id:$state.params.instId};
 
-        $scope.run = RunFactory.get({id: $stateParams.runId}, function () {
+        $scope.files = FileFactory.query({instId: $state.params.instId, runId: $state.params.runId});
+
+        $scope.run = RunFactory.get({instId: $state.params.instId, runId: $state.params.runId}, function () {
             angular.forEach($scope.run.resultVariables, function (res) {
                 if ((res.type == 'integer') || (res.type == 'real')) {
-                    var r = ResultFactory.get({id: $stateParams.runId, name: res.name}, function () {
+                    var r = ResultFactory.get({instId: $state.params.instId, runId: $state.params.runId, name: res.name}, function () {
                         $scope.chart.addSeries({
                             name: res.name,
                             data: (function () {
@@ -206,7 +210,7 @@ angular.module('solace.controllers', []).
                     });
                 }
                 else {
-                    var r = ResultFactory.get({id: $stateParams.runId, name: res.name}, function () {
+                    var r = ResultFactory.get({instId: $state.params.instId, runId: $state.params.runId, name: res.name}, function () {
                         for (var i=0; i<r.data.length; i++)
                             $scope.results.push({
                                 timestamp: r.data[i][0],
