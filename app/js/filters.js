@@ -16,4 +16,22 @@ angular.module('solace.filters', []).
             else
                 return hours+':'+minutes+':'+seconds;
         };
+    }).
+
+    filter('humanReadable', function () {
+        return function(input) {
+            if (typeof input !== 'number')
+                input = parseInt(input);
+
+            if (input > 1024*1024*1024*1024)
+                return (input / (1024*1024*1024*1024)).toFixed(1) + 'T';
+            else if (input > 1024*1024*1024)
+                return (input / (1024*1024*1024)).toFixed(1) + 'G';
+            else if (input > 1024*1024)
+                return (input / (1024*1024)).toFixed(1) + 'M';
+            else if (input > 1024)
+                return (input / 1024) + 'K';
+            else
+                return input;
+        };
     });
