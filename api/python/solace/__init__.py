@@ -53,7 +53,7 @@ class Run(object):
         return 'ExperimentInstanceRun<%s,%s>' % (self.instance.id,str(self.id))
 
     def begin(self):
-        r = requests.post(self.experiment.api_url+'/'+self.instance.id+'/'+str(self.id)+'/begin', cookies=self.experiment.cookies)
+        r = requests.post(self.experiment.api_url+'/'+self.instance.id+'/'+str(self.id)+'/begin', cookies=self.experiment.cookies, verify=False)
 
         if r.status_code != 200:
             try:
@@ -71,7 +71,8 @@ class Run(object):
                             'progress': progress,
                             'results': parse_params(partial_results)
                           },
-                          cookies=self.experiment.cookies)
+                          cookies=self.experiment.cookies,
+                          verify=False)
 
         if r.status_code != 200:
             try:
@@ -85,7 +86,8 @@ class Run(object):
                           data={
                             'results': parse_params(results)
                           },
-                          cookies=self.experiment.cookies)
+                          cookies=self.experiment.cookies,
+                          verify=False)
 
         if r.status_code != 200:
             try:
@@ -95,7 +97,7 @@ class Run(object):
                 raise Exception('Unknown error at posting progress.')
 
     def cancel(self):
-        r = requests.post(self.experiment.api_url+'/'+self.instance.id+'/'+str(self.id)+'/cancel', cookies=self.experiment.cookies)
+        r = requests.post(self.experiment.api_url+'/'+self.instance.id+'/'+str(self.id)+'/cancel', cookies=self.experiment.cookies, verify=False)
 
         if r.status_code != 200:
             try:
@@ -109,7 +111,8 @@ class Run(object):
                           files={
                             'file': (filename, open(path, 'rb'))
                           },
-                          cookies=self.experiment.cookies)
+                          cookies=self.experiment.cookies,
+                          verify=False)
 
         if r.status_code != 200:
             try:
@@ -136,7 +139,7 @@ class Experiment(object):
         self.name = experiment_name
         self.cookies = cookies
 
-        r = requests.get(self.api_url, cookies=self.cookies)
+        r = requests.get(self.api_url, cookies=self.cookies, verify=False)
 
         if r.status_code != 200:
             try:
@@ -158,7 +161,8 @@ class Experiment(object):
                           data={
                             'num_runs': num_runs,
                             'parameters': parse_params(parameters)},
-                          cookies=self.cookies)
+                          cookies=self.cookies,
+                          verify=False)
 
         if r.status_code != 200:
             try:
@@ -182,11 +186,11 @@ def get_experiment(uri, username, password):
         raise Exception('Invalid experiment URI')
 
     hostname = m.group('hostname')
-    port = m.group('port') or 80
+    port = m.group('port') or 443
     experiment_name = m.group('experiment_name')
-    api_url = 'http://%s:%s/api/e/%s' % (hostname, port, experiment_name)
+    api_url = 'https://%s:%s/api/e/%s' % (hostname, port, experiment_name)
 
-    r = requests.post('http://%s:%s/api/s' % (hostname, port), data={'username': username, 'password': password})
+    r = requests.post('https://%s:%s/api/s' % (hostname, port), data={'username': username, 'password': password}, verify=False)
     if r.status_code != 200:
         try:
             res = r.json()
