@@ -1,276 +1,277 @@
-exports.findById = function(req, res) {
-    var instance_id = req.params.id,
-        run_id      = req.params.runId;
+var fs = require('fs');
 
-    if ((typeof instance_id !== 'string') || (typeof run_id !== 'string')) {
-        res.send(400, {error: 'missing_parameters'});
-        return;
-    }
+exports.get = function(req, res) {
+    var expName = req.params.expName,
+        instId  = req.params.instId,
+        runId   = parseInt(req.params.runId);
 
-    run_id = parseInt(req.params.runId);
-
-    req.db.query('SELECT r.num AS id,i.exp_id,r.instance_id,r.started_at,r.finished_at,r.progress \
-                    FROM runs r, instances i \
-                    WHERE r.instance_id=$1 AND r.num=$2 AND r.instance_id = i.id;',
-            [instance_id,run_id], function(result) {
+    req.db.query('SELECT r.id, r.instance_id, r.started_at, r.finished_at, r.progress, r.canceled \
+                    FROM experiments e, instances i, runs r \
+                    WHERE e.name = $1 AND e.id = i.exp_id AND i.id = $2 AND r.id = $3;',
+                [expName, instId, runId], function(result) {
 
         if (result.rows.length < 1) {
             req.db.done();
-            return res.send(404, {error: 'not_found'});
+            return res.json(404, {error: 'not_found'});
         }
 
         var run = result.rows[0];
 
-        req.db.query("SELECT has_permission($1, $2, 'read');", [req.user,run.exp_id], function (result) {
-            if ((result.rows.length < 1) || (!result.rows[0].has_permission)) {
-                req.db.done();
-                res.send(403, {error: 'forbidden'});
-                return;
-            }
+        req.db.query('SELECT f.id, f.exp_id, f.name, f.type, f.size, f.created_at \
+                        FROM experiment_files f, run_files rf \
+                        WHERE rf.instance_id = $1 \
+                          AND rf.run_id = $2 \
+                          AND rf.file_id = f.id \
+                        ORDER BY f.name ASC;',
+                    [instId,runId], function(result) {
 
-            req.db.query('SELECT name,type FROM experiment_result_variables WHERE exp_id=$1;', [run.exp_id], function(result) {
+            run.files = result.rows;
+
+            req.db.query('SELECT r.name, r.type \
+                            FROM experiments e, experiment_result_variables r \
+                            WHERE e.name = $1 AND r.exp_id = e.id;',
+                        [expName], function(result) {
+
                 req.db.done();
-                run.resultVariables = result.rows;
-                res.send(run);
+                run.results = result.rows;
+                res.json(run);
             });
         });
     });
 };
 
-exports.findResultByName = function(req, res) {
-    var instance_id = req.params.id,
-        run_id      = req.params.runId,
-        var_name    = req.params.name;
+exports.update = function(req, res) {
+    var expName = req.params.expName,
+        instId  = req.params.instId,
+        runId   = parseInt(req.params.runId);
 
-    if ((typeof instance_id !== 'string') || (typeof run_id !== 'string') || (typeof var_name !== 'string')) {
-        res.send(400, {error: 'missing_parameters'});
-        return;
-    }
+    var progress = parseFloat(req.body.progress),
+        results = JSON.parse(req.body.results);
 
-    run_id = parseInt(req.params.runId);
-
-    req.db.query('SELECT r.id,i.exp_id \
-                    FROM runs r, instances i \
-                    WHERE r.instance_id = $1 AND r.num = $2 AND r.instance_id = i.id;',
-            [instance_id,run_id], function(result) {
+    req.db.query('SELECT r.id, r.instance_id, r.started_at, r.finished_at, r.progress, r.canceled \
+                    FROM experiments e, instances i, runs r \
+                    WHERE e.name = $1 AND e.id = i.exp_id AND i.id = $2 AND r.id = $3;',
+                [expName, instId, runId], function(result) {
 
         if (result.rows.length < 1) {
             req.db.done();
-            return res.send(404, {error: 'not_found'});
+            return res.json(404, {error: 'not_found'});
         }
 
         var run = result.rows[0];
 
-        req.db.query("SELECT has_permission($1, $2, 'read');", [req.user,run.exp_id], function (result) {
-            if ((result.rows.length < 1) || (!result.rows[0].has_permission)) {
-                req.db.done();
-                res.send(403, {error: 'forbidden'});
-                return;
-            }
+        req.db.transaction(function (commit, rollback) {
+            req.db.query('UPDATE runs SET progress = $3 WHERE id = $1 AND instance_id = $2;',
+                        [runId, instId, progress], function(result) {
 
-            req.db.query('SELECT inserted_at,value FROM run_result_values WHERE run_id=$1 AND name=$2 \
-              ORDER BY inserted_at;', [run.id,var_name], function(result) {
-                req.db.done();
+                var stream = req.db.copyFrom("COPY run_result_values \
+                                                (run_id, instance_id, name, value, type) \
+                                                FROM STDIN WITH CSV;", function () {
 
-                var results = [];
-                for (var i=0; i<result.rows.length; i++) {
-                    results.push([result.rows[i].inserted_at, result.rows[i].value]);
+                    commit(function () {
+                        req.db.done();
+                        res.json(200);
+                    });
+                });
+
+                for (var i=0; i<results.length; i++) {
+                    var name = results[i]['name'],
+                        value = results[i]['value'],
+                        type = results[i]['type'];
+
+                    stream.write(runId+',"'+instId+'","'+name+'","'+value+'",'+type+'\n');
                 }
-
-                res.send(200, {data: results});
+                stream.end();
             });
         });
     });
 };
 
 exports.begin = function(req, res) {
-    var instance_id = req.params.id,
-        run_id      = req.params.runId;
+    var expName = req.params.expName,
+        instId  = req.params.instId,
+        runId   = parseInt(req.params.runId);
 
-    if ((typeof instance_id !== 'string') || (typeof run_id !== 'string')) {
-        res.send(400, {error: 'missing_parameters'});
-        return;
-    }
-
-    run_id = parseInt(req.params.runId);
-
-    req.db.query('SELECT r.id,i.exp_id \
-                    FROM runs r, instances i \
-                    WHERE r.instance_id = $1 AND r.num = $2 AND r.instance_id = i.id;',
-            [instance_id,run_id], function(result) {
+    req.db.query('SELECT r.id, r.instance_id, r.started_at, r.finished_at, r.progress, r.canceled \
+                    FROM experiments e, instances i, runs r \
+                    WHERE e.name = $1 AND e.id = i.exp_id AND i.id = $2 AND r.id = $3;',
+                [expName, instId, runId], function(result) {
 
         if (result.rows.length < 1) {
             req.db.done();
-            return res.send(404, {error: 'not_found'});
+            return res.json(404, {error: 'not_found'});
         }
 
-        var run = result.rows[0];
+        req.db.query('UPDATE runs SET progress = 0, canceled = false, started_at = now() \
+                        WHERE id = $1 AND instance_id = $2;',
+                    [runId, instId], function(result) {
 
-        req.db.query("SELECT has_permission($1, $2, 'write');", [req.user,run.exp_id], function (result) {
-            if ((result.rows.length < 1) || (!result.rows[0].has_permission)) {
-                req.db.done();
-                res.send(403, {error: 'forbidden'});
-                return;
-            }
-
-            req.db.query('UPDATE runs SET progress=0, canceled=false, started_at=now() WHERE id=$1;',
-                    [run.id], function(result) {
-                req.db.done();
-                res.send(200);
-            });
-        });
-    });
-}
-
-exports.update = function(req, res) {
-    var instance_id = req.params.id,
-        run_id      = req.params.runId;
-
-    if ((typeof instance_id !== 'string') || (typeof run_id !== 'string')) {
-        res.send(400, {error: 'missing_parameters'});
-        return;
-    }
-
-    run_id = parseInt(req.params.runId);
-
-    var progress = parseFloat(req.body.progress),
-        results = JSON.parse(req.body.results);
-
-    req.db.query('SELECT r.id,i.exp_id \
-                    FROM runs r, instances i \
-                    WHERE r.instance_id = $1 AND r.num = $2 AND r.instance_id = i.id;',
-            [instance_id,run_id], function(result) {
-
-        if (result.rows.length < 1) {
             req.db.done();
-            return res.send(404, {error: 'not_found'});
-        }
-
-        var run = result.rows[0];
-
-        req.db.query("SELECT has_permission($1, $2, 'write');", [req.user,run.exp_id], function (result) {
-            if ((result.rows.length < 1) || (!result.rows[0].has_permission)) {
-                req.db.done();
-                res.send(403, {error: 'forbidden'});
-                return;
-            }
-
-            req.db.transaction(function (commit, rollback) {
-                req.db.query('UPDATE runs SET progress=$2 WHERE id=$1;', [run.id, progress], function(result) {
-                    var stream = req.db.copyFrom("COPY run_result_values (run_id, name, value, type) \
-                                                  FROM STDIN WITH CSV;", function () {
-                        commit(function () {
-                            req.db.done();
-                            res.send(200);
-                        });
-                    });
-
-                    for (var i=0; i<results.length; i++) {
-                        var name = results[i]['name'],
-                            value = results[i]['value'],
-                            type = results[i]['type'];
-
-                        stream.write(run.id+',"'+name+'","'+value+'",'+type+'\n');
-                    }
-                    stream.end();
-                });
-            });
+            res.json(200);
         });
     });
-}
+};
 
 exports.done = function(req, res) {
-    var instance_id = req.params.id,
-        run_id      = req.params.runId;
-
-    if ((typeof instance_id !== 'string') || (typeof run_id !== 'string')) {
-        res.send(400, {error: 'missing_parameters'});
-        return;
-    }
-
-    run_id = parseInt(req.params.runId);
+    var expName = req.params.expName,
+        instId  = req.params.instId,
+        runId   = parseInt(req.params.runId);
 
     var results = JSON.parse(req.body.results);
 
-    req.db.query('SELECT r.id,i.exp_id \
-                    FROM runs r, instances i \
-                    WHERE r.instance_id = $1 AND r.num = $2 AND r.instance_id = i.id;',
-            [instance_id,run_id], function(result) {
+    req.db.query('SELECT r.id, r.instance_id, r.started_at, r.finished_at, r.progress, r.canceled \
+                    FROM experiments e, instances i, runs r \
+                    WHERE e.name = $1 AND e.id = i.exp_id AND i.id = $2 AND r.id = $3;',
+                [expName, instId, runId], function(result) {
 
         if (result.rows.length < 1) {
             req.db.done();
-            return res.send(404, {error: 'not_found'});
+            return res.json(404, {error: 'not_found'});
         }
 
         var run = result.rows[0];
 
-        req.db.query("SELECT has_permission($1, $2, 'write');", [req.user,run.exp_id], function (result) {
-            if ((result.rows.length < 1) || (!result.rows[0].has_permission)) {
-                req.db.done();
-                res.send(403, {error: 'forbidden'});
-                return;
-            }
+        req.db.transaction(function (commit, rollback) {
+            req.db.query('UPDATE runs SET progress = 1, finished_at = now() \
+                            WHERE id = $1 AND instance_id = $2;',
+                        [runId, instId], function(result) {
+
+                var stream = req.db.copyFrom("COPY run_result_values \
+                                                (run_id, instance_id, name, value, type) \
+                                                FROM STDIN WITH CSV;", function () {
+
+                    commit(function () {
+                        req.db.done();
+                        res.json(200);
+                    });
+                });
+
+                for (var i=0; i<results.length; i++) {
+                    var name = results[i]['name'],
+                        value = results[i]['value'],
+                        type = results[i]['type'];
+
+                    stream.write(runId+',"'+instId+'","'+name+'","'+value+'",'+type+'\n');
+                }
+                stream.end();
+            });
+        });
+    });
+};
+
+exports.cancel = function(req, res) {
+    var expName = req.params.expName,
+        instId  = req.params.instId,
+        runId   = parseInt(req.params.runId);
+
+    req.db.query('SELECT r.id, r.instance_id, r.started_at, r.finished_at, r.progress, r.canceled \
+                    FROM experiments e, instances i, runs r \
+                    WHERE e.name = $1 AND e.id = i.exp_id AND i.id = $2 AND r.id = $3;',
+                [expName, instId, runId], function(result) {
+
+        if (result.rows.length < 1) {
+            req.db.done();
+            return res.json(404, {error: 'not_found'});
+        }
+
+        req.db.query('UPDATE runs SET canceled = true, finished_at = now() \
+                        WHERE id = $1 AND instance_id = $2;',
+                    [runId, instId], function(result) {
+
+            req.db.done();
+            res.json(200);
+        });
+    });
+};
+
+exports.upload = function(req, res) {
+    var expName = req.params.expName,
+        instId  = req.params.instId,
+        runId   = parseInt(req.params.runId);
+
+    var file = req.files.file;
+
+    req.db.query('SELECT r.id, r.instance_id, r.started_at, r.finished_at, r.progress, r.canceled \
+                    FROM experiments e, instances i, runs r \
+                    WHERE e.name = $1 AND e.id = i.exp_id AND i.id = $2 AND r.id = $3;',
+                [expName, instId, runId], function(result) {
+
+        if (result.rows.length < 1) {
+            req.db.done();
+            return res.json(404, {error: 'not_found'});
+        }
+
+        var run = result.rows[0];
+
+        fs.readFile(file.path, 'hex', function (err, data) {
+            data = '\\x' + data;
 
             req.db.transaction(function (commit, rollback) {
-                req.db.query('UPDATE runs SET progress=1.0, finished_at=now() WHERE id=$1;',
-                            [run.id], function(result) {
-                    var stream = req.db.copyFrom("COPY run_result_values (run_id, name, value, type) \
-                                                  FROM STDIN WITH CSV;", function () {
+                req.db.query('INSERT INTO experiment_files (exp_id, name, type, size, data) \
+                                (SELECT id,$2,$3,$4,$5 FROM experiments WHERE name = $1) \
+                                RETURNING id;',
+                            [expName,
+                             file.name || 'unnamed',
+                             file.type || 'application/octet-stream',
+                             file.size,
+                             data], function(result) {
+
+                    req.db.query('INSERT INTO run_files (run_id, instance_id, file_id) \
+                                    VALUES ($1, $2, $3);',
+                                [runId, instId, result.rows[0].id], function(result) {
+
                         commit(function () {
                             req.db.done();
-                            res.send(200);
+                            res.json(200);
                         });
                     });
-
-                    for (var i=0; i<results.length; i++) {
-                        var name = results[i]['name'],
-                            value = results[i]['value'],
-                            type = results[i]['type'];
-
-                        stream.write(run.id+',"'+name+'","'+value+'",'+type+'\n');
-                    }
-                    stream.end();
                 });
             });
         });
     });
-}
+};
 
-exports.cancel = function(req, res) {
-    var instance_id = req.params.id,
-        run_id      = req.params.runId;
+exports.listFiles = function(req, res) {
+    var expName = req.params.expName,
+        instId  = req.params.instId,
+        runId   = parseInt(req.params.runId);
 
-    if ((typeof instance_id !== 'string') || (typeof run_id !== 'string')) {
-        res.send(400, {error: 'missing_parameters'});
-        return;
-    }
+    req.db.query('SELECT f.id, f.exp_id, f.name, f.type, f.size, f.created_at \
+                    FROM experiments e, instances i, runs r, experiment_files f, run_files rf \
+                    WHERE e.name = $1 AND i.exp_id = e.id AND i.id = $2 \
+                        AND rf.instance_id = i.id \
+                        AND rf.run_id = $3 \
+                        AND rf.file_id = f.id \
+                    ORDER BY f.name ASC;',
+                [expName,instId,runId], function(result) {
 
-    run_id = parseInt(req.params.runId);
+        req.db.done();
+        res.json(result.rows);
+    });
+};
 
-    req.db.query('SELECT r.id,i.exp_id \
-                    FROM runs r, instances i \
-                    WHERE r.instance_id = $1 AND r.num = $2 AND r.instance_id = i.id;',
-            [instance_id,run_id], function(result) {
+exports.getResult = function(req, res) {
+    var expName = req.params.expName,
+        instId  = req.params.instId,
+        runId   = parseInt(req.params.runId),
+        name     = req.params.name;
 
-        if (result.rows.length < 1) {
-            req.db.done();
-            return res.send(404, {error: 'not_found'});
+    req.db.query('SELECT v.inserted_at, v.value \
+                    FROM experiments e, instances i, run_result_values v \
+                    WHERE e.name = $1 AND i.exp_id = e.id AND i.id = $2 \
+                        AND v.instance_id = i.id \
+                        AND v.run_id = $3 \
+                        AND v.name = $4 \
+                    ORDER BY v.inserted_at;',
+                [expName, instId, runId, name], function(result) {
+
+        req.db.done();
+
+        var results = [];
+        for (var i=0; i<result.rows.length; i++) {
+            results.push([result.rows[i].inserted_at, result.rows[i].value]);
         }
 
-        var run = result.rows[0];
-
-        req.db.query("SELECT has_permission($1, $2, 'write');", [req.user,run.exp_id], function (result) {
-            if ((result.rows.length < 1) || (!result.rows[0].has_permission)) {
-                req.db.done();
-                res.send(403, {error: 'forbidden'});
-                return;
-            }
-
-            req.db.query('UPDATE runs SET canceled=true, finished_at=now() WHERE id=$1;',
-                        [run.id], function(result) {
-                req.db.done();
-                res.send(200);
-            });
-        });
+        res.json(200, {data: results});
     });
-}
+};

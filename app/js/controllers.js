@@ -58,7 +58,7 @@ angular.module('solace.controllers', []).
         $scope.errorMessage = "";
         $scope.showError = false;
         $scope.menuitems = [
-            {title: "Experiments", link: "#/experiments", section: "experiments", active: "", icon: "glyphicon glyphicon-tasks"},
+            {title: "Experiments", link: "#/experiment", section: "experiment", active: "", icon: "glyphicon glyphicon-tasks"},
             {title: "Viewer", link: "#/viewer", section: "viewer", active: "", icon: "glyphicon glyphicon-stats"},
         ];
 
@@ -112,22 +112,29 @@ angular.module('solace.controllers', []).
         $scope.secondsLength = 0;
         $scope.playPauseIcon = "glyphicon-play";
 
-        $scope.viewer.onClockUpdate(function (clock) {
-            $scope.$apply(function () {
-                $scope.clock = clock;
-                $scope.progress = clock / $scope.viewer.secondsLength;
-            });
-        });
-
-        console.log($state.params);
-
-        if ((typeof $state.params.instId !== 'undefined') && (typeof $state.params.runId !== 'undefined')) {
-            $http.get('/api/instance/'+$state.params.instId+'/'+$state.params.runId+'/files/'+$state.params.filename, {responseType: "arraybuffer"}).success(function (buffer) {
+        if (typeof $state.params.fileId !== 'undefined') {
+            $http.get('/api/f/'+$state.params.expId+'/'+$state.params.fileId, {responseType: "arraybuffer"}).success(function (buffer) {
                 $scope.viewer.load(buffer);
                 $scope.secondsLength = $scope.viewer.secondsLength;
                 $rootScope.$broadcast('$doneLoading');
             });
         }
+        else
+            $rootScope.$broadcast('$doneLoading');
+
+        $scope.$on("$fileLoadBegin", function(event) {
+            $rootScope.$broadcast('$beginLoading');
+        });
+
+        $scope.$on("$fileLoadError", function(event, file) {
+            $rootScope.$broadcast('$doneLoading');
+        });
+
+        $scope.$on("$fileLoadDone", function(event, file) {
+            $scope.viewer.load(file.buffer);
+            $scope.secondsLength = $scope.viewer.secondsLength;
+            $rootScope.$broadcast('$doneLoading');
+        });
 
         var playing = false;
         $scope.play = function () {
@@ -141,29 +148,36 @@ angular.module('solace.controllers', []).
             }
             playing = !playing;
         };
+
+        $scope.viewer.onClockUpdate(function (clock) {
+            $scope.$apply(function () {
+                $scope.clock = clock;
+                $scope.progress = clock / $scope.viewer.secondsLength;
+            });
+        });
     }).
 
-    controller('DashboardCtrl', function ($scope, $rootScope) {
+    controller('ExperimentListCtrl', function ($scope, $rootScope, ExperimentFactory) {
+        $rootScope.$broadcast('$beginLoading');
+        $scope.experiments = ExperimentFactory.query(function () {
+            $rootScope.$broadcast('$doneLoading');
+        });
+    }).
+
+    controller('ExperimentNewCtrl', function ($scope, $rootScope, ExperimentFactory) {
         $rootScope.$broadcast('$beginLoading');
         $rootScope.$broadcast('$doneLoading');
     }).
 
-    controller('ExperimentsCtrl', function ($scope, $rootScope, ExperimentsFactory) {
-        $rootScope.$broadcast('$beginLoading');
-        $scope.experiments = ExperimentsFactory.query(function () {
-            $rootScope.$broadcast('$doneLoading');
-        });
-    }).
-
-    controller('ExperimentCtrl', function ($scope, $rootScope, $state, $location, ExperimentFactory) {
+    controller('ExperimentDetailCtrl', function ($scope, $rootScope, $state, ExperimentFactory) {
         $rootScope.$broadcast('$beginLoading');
 
-        $scope.experiment = ExperimentFactory.get({name: $state.params.expName}, function () {
+        $scope.experiment = ExperimentFactory.get({expName: $state.params.expName}, function () {
             $rootScope.$broadcast('$doneLoading');
-            update_active_instance();
+            updateActiveInstance();
         });
 
-        function update_active_instance() {
+        function updateActiveInstance() {
             if (typeof $state.params.instId !== 'undefined' ) {
                 angular.forEach($scope.experiment.instances, function (inst) {
                     if (inst.id == $state.params.instId)
@@ -175,29 +189,26 @@ angular.module('solace.controllers', []).
         }
 
         $scope.$on("$stateChangeSuccess", function(event, current, previous) {
-            update_active_instance();
+            updateActiveInstance();
         });
     }).
 
-    controller('InstanceCtrl', function ($scope, $rootScope, $stateParams, InstanceFactory) {
+    controller('InstanceCtrl', function ($scope, $rootScope, $state, InstanceFactory) {
         $rootScope.$broadcast('$beginLoading');
 
-        $scope.instance = InstanceFactory.get({id: $stateParams.instId}, function () {
+        $scope.instance = InstanceFactory.get({expName: $state.params.expName, instId: $state.params.instId}, function () {
             $rootScope.$broadcast('$doneLoading');
         });
     }).
 
-    controller('RunCtrl', function ($scope, $rootScope, $state, RunFactory, ResultFactory, FileFactory) {
+    controller('RunCtrl', function ($scope, $rootScope, $state, RunFactory, ResultFactory) {
         $rootScope.$broadcast('$beginLoading');
 
-        $scope.instance = {id:$state.params.instId};
-
-        $scope.files = FileFactory.query({instId: $state.params.instId, runId: $state.params.runId});
-
-        $scope.run = RunFactory.get({instId: $state.params.instId, runId: $state.params.runId}, function () {
-            angular.forEach($scope.run.resultVariables, function (res) {
+        $scope.run = RunFactory.get({expName: $state.params.expName, instId: $state.params.instId, runId: $state.params.runId}, function () {
+            console.log($scope.run.files);
+            angular.forEach($scope.run.results, function (res) {
                 if ((res.type == 'integer') || (res.type == 'real')) {
-                    var r = ResultFactory.get({instId: $state.params.instId, runId: $state.params.runId, name: res.name}, function () {
+                    var r = ResultFactory.get({expName: $state.params.expName, instId: $state.params.instId, runId: $state.params.runId, name: res.name}, function () {
                         $scope.chart.addSeries({
                             name: res.name,
                             data: (function () {

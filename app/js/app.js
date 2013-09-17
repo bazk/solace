@@ -6,7 +6,9 @@ angular.module('solace', ['ngAnimate', 'ngResource', 'ui.router', 'solace.contro
             state('root', {
                 url: '',
                 controller: function ($scope, $location) {
-                    $location.path("/experiments/list");
+                    $scope.$on("$stateChangeBegin", function (e) {
+                        $location.path("/experiment");
+                    });
                 }
             }).
             state('login', {
@@ -15,56 +17,49 @@ angular.module('solace', ['ngAnimate', 'ngResource', 'ui.router', 'solace.contro
                 controller: 'LoginCtrl'
             }).
             state('viewer', {
-                abstract: true,
                 url: '/viewer',
                 section: 'viewer',
                 templateUrl: 'partials/viewer.html',
                 controller: 'ViewerCtrl'
             }).
-            state('viewer.list', {
-                url: '',
+            state('view-file', {
+                url: '/viewer/:expId/:fileId',
                 section: 'viewer',
                 templateUrl: 'partials/viewer.html',
                 controller: 'ViewerCtrl'
-            }).
-            state('viewer.view', {
-                url: '/:instId/:runId/:filename',
-                section: 'viewer',
-                templateUrl: 'partials/viewer.html',
-                controller: 'ViewerCtrl'
-            }).
-            state('experiments', {
-                abstract: true,
-                url: '/experiments',
-                section: 'experiments',
-                templateUrl: 'partials/experiments.html',
-                controller: 'ExperimentsCtrl',
-            }).
-            state('experiments.list', {
-                url: '',
-                section: 'experiments',
-                templateUrl: 'partials/experiments.list.html',
-            }).
-            state('experiments.new', {
-                url: '/new',
-                section: 'experiments',
-                templateUrl: 'partials/experiments.new.html',
             }).
             state('experiment', {
-                url: '/experiment/:expName',
-                section: 'experiments',
-                templateUrl: 'partials/experiment.html',
-                controller: 'ExperimentCtrl',
+                abstract: true,
+                url: '/experiment',
+                templateUrl: 'partials/experiments.html'
             }).
-            state('experiment.instance', {
+            state('experiment.list', {
+                url: '',
+                section: 'experiment',
+                templateUrl: 'partials/experiment.list.html',
+                controller: 'ExperimentListCtrl',
+            }).
+            state('experiment.new', {
+                url: '/new',
+                section: 'experiment',
+                templateUrl: 'partials/experiment.new.html',
+                controller: 'ExperimentNewCtrl',
+            }).
+            state('experiment.detail', {
+                url: '/:expName',
+                section: 'experiment',
+                templateUrl: 'partials/experiment.detail.html',
+                controller: 'ExperimentDetailCtrl',
+            }).
+            state('experiment.detail.instance', {
                 url: '/:instId',
-                section: 'experiments',
+                section: 'experiment',
                 templateUrl: 'partials/experiment.instance.html',
                 controller: 'InstanceCtrl'
             }).
-            state('experiment.run', {
+            state('experiment.detail.run', {
                 url: '/:instId/:runId',
-                section: 'experiments',
+                section: 'experiment',
                 templateUrl: 'partials/experiment.run.html',
                 controller: 'RunCtrl'
             });

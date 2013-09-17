@@ -53,7 +53,7 @@ LANGUAGE SQL;
 
 CREATE OR REPLACE FUNCTION nextsha1() RETURNS text AS
 $$
-    SELECT right(digest(nextval('sha1_seq')::text, 'sha1'), 40);
+    SELECT right(digest(nextval('sha1_seq')::text, 'sha1')::text, 40);
 $$
 LANGUAGE SQL;
 
@@ -94,37 +94,6 @@ BEGIN
     END CASE;
 
     RETURN FOUND;
-END;
-$$
-LANGUAGE 'plpgsql';
-
-CREATE OR REPLACE FUNCTION get_dir(_path text, _create boolean default false) RETURNS integer AS
-$$
-DECLARE
-    n TEXT;
-    parent INTEGER;
-    found_parent INTEGER;
-BEGIN
-    parent := 0;
-
-    FOR n IN SELECT regexp_split_to_table(_path, E'/')
-    LOOP
-        IF n != '' THEN
-            SELECT id INTO found_parent FROM directories WHERE parent_id=parent AND name=n;
-
-            IF FOUND THEN
-                parent := found_parent;
-            ELSE
-                IF NOT _create THEN
-                    RETURN -1;
-                END IF;
-
-                INSERT INTO directories (parent_id,name) VALUES (parent,n) RETURNING id INTO parent;
-            END IF;
-        END IF;
-    END LOOP;
-
-    RETURN parent;
 END;
 $$
 LANGUAGE 'plpgsql';

@@ -39,4 +39,31 @@ angular.module('solace.directives', []).
         return function (scope, element, attrs) {
             scope[attrs.srsViewer].bind(element);
         }
+    }).
+    directive('solFile', function() {
+        return function (scope, element, attrs) {
+            element.bind('change', function (e) {
+                scope.$broadcast('$fileLoadBegin');
+
+                var files = e.target.files;
+
+                if (files.length != 1) {
+                    scope.$broadcast('$fileLoadError', null);
+                    return;
+                }
+
+                var fileReader = new FileReader();
+
+                fileReader.onload = function (e) {
+                    files[0].buffer = this.result;
+                    scope.$broadcast('$fileLoadDone', files[0]);
+                };
+
+                fileReader.onerror = function (e) {
+                    scope.$broadcast('$fileLoadError', files[0]);
+                };
+
+                fileReader.readAsArrayBuffer(files[0]);
+            });
+        }
     });

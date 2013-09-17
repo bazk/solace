@@ -21,8 +21,8 @@ CREATE TABLE groups (
 );
 
 CREATE TABLE user_groups (
-    user_id         INTEGER NOT NULL REFERENCES users(id),
-    group_id        INTEGER NOT NULL REFERENCES groups(id),
+    user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    group_id        INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
     UNIQUE (user_id, group_id)
 );
 
@@ -37,22 +37,22 @@ CREATE TABLE experiments (
     description     TEXT,
     created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     repository_url  TEXT,
-    owner           INTEGER NOT NULL REFERENCES users(id),
+    owner           INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     PRIMARY KEY (id),
     UNIQUE(name)
 );
 
 CREATE TABLE experiment_user_permissions (
-    exp_id          INTEGER NOT NULL REFERENCES experiments(id),
-    user_id         INTEGER NOT NULL REFERENCES users(id),
+    exp_id          INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
+    user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     read            BOOLEAN DEFAULT TRUE,
     write           BOOLEAN DEFAULT FALSE,
     UNIQUE (exp_id, user_id)
 );
 
 CREATE TABLE experiment_group_permissions (
-    exp_id          INTEGER NOT NULL REFERENCES experiments(id),
-    group_id        INTEGER NOT NULL REFERENCES groups(id),
+    exp_id          INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
+    group_id        INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
     read            BOOLEAN DEFAULT TRUE,
     write           BOOLEAN DEFAULT FALSE,
     UNIQUE (exp_id, group_id)
@@ -60,7 +60,7 @@ CREATE TABLE experiment_group_permissions (
 
 CREATE TABLE experiment_parameters (
     id              SERIAL,
-    exp_id          INTEGER NOT NULL REFERENCES experiments(id),
+    exp_id          INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
     name            CITEXT NOT NULL,
     type            variable_type NOT NULL,
     PRIMARY KEY (id),
@@ -69,11 +69,22 @@ CREATE TABLE experiment_parameters (
 
 CREATE TABLE experiment_result_variables (
     id              SERIAL,
-    exp_id          INTEGER NOT NULL REFERENCES experiments(id),
+    exp_id          INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
     name            CITEXT NOT NULL,
     type            variable_type NOT NULL,
     PRIMARY KEY (id),
     UNIQUE (exp_id, name)
+);
+
+CREATE TABLE experiment_files (
+    id              CHAR(40) DEFAULT nextsha1(),
+    exp_id          INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
+    name            TEXT NOT NULL,
+    type            TEXT DEFAULT 'application/octet-stream',
+    size            BIGINT NOT NULL,
+    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    data            BYTEA,
+    PRIMARY KEY (id)
 );
 
 
@@ -83,7 +94,7 @@ CREATE TABLE experiment_result_variables (
 
 CREATE TABLE instances (
     id              CHAR(40) DEFAULT nextsha1(),
-    exp_id          INTEGER NOT NULL REFERENCES experiments(id),
+    exp_id          INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
     started_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     finished_at     TIMESTAMP WITH TIME ZONE,
     repository_ref  TEXT,
@@ -92,7 +103,7 @@ CREATE TABLE instances (
 );
 
 CREATE TABLE instance_parameter_values (
-    instance_id     CHAR(40) NOT NULL REFERENCES instances(id),
+    instance_id     CHAR(40) NOT NULL REFERENCES instances(id) ON DELETE CASCADE,
     name            CITEXT NOT NULL,
     type            variable_type NOT NULL,
     value           TEXT NOT NULL,
@@ -105,53 +116,32 @@ CREATE TABLE instance_parameter_values (
 --
 
 CREATE TABLE runs (
-    id              SERIAL,
-    instance_id     CHAR(40) NOT NULL REFERENCES instances(id),
-    num             INTEGER NOT NULL,
+    id              INTEGER NOT NULL,
+    instance_id     CHAR(40) NOT NULL REFERENCES instances(id) ON DELETE CASCADE,
     started_at      TIMESTAMP WITH TIME ZONE,
     finished_at     TIMESTAMP WITH TIME ZONE,
     progress        REAL DEFAULT 0.0,
     canceled        BOOLEAN DEFAULT false,
-    PRIMARY KEY (id),
-    UNIQUE (instance_id, num)
+    PRIMARY KEY (id, instance_id)
 );
 
 CREATE TABLE run_result_values (
-    run_id          INTEGER NOT NULL REFERENCES runs(id),
+    run_id          INTEGER NOT NULL,
+    instance_id     CHAR(40) NOT NULL,
     name            CITEXT NOT NULL,
     type            variable_type NOT NULL,
     inserted_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    value           TEXT NOT NULL
+    value           TEXT NOT NULL,
+    FOREIGN KEY (run_id, instance_id) REFERENCES runs (id, instance_id) ON DELETE CASCADE
 );
 
-
---
--- files and directories --
---
-
-CREATE SEQUENCE directories_seq START 1;
-
-CREATE TABLE directories (
-    id              INTEGER DEFAULT nextval('directories_seq'),
-    parent_id       INTEGER REFERENCES directories(id),
-    name            TEXT NOT NULL,
-    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    PRIMARY KEY (id),
-    UNIQUE (parent_id, name)
+CREATE TABLE run_files (
+    run_id          INTEGER NOT NULL,
+    instance_id     CHAR(40) NOT NULL,
+    file_id         CHAR(40) NOT NULL REFERENCES experiment_files(id) ON DELETE CASCADE,
+    FOREIGN KEY (run_id, instance_id) REFERENCES runs (id, instance_id) ON DELETE CASCADE
 );
 
-INSERT INTO directories (id,name) VALUES (0,'');
-
-CREATE TABLE files (
-    id              SERIAL,
-    parent_id       INTEGER REFERENCES directories(id),
-    name            TEXT NOT NULL,
-    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    owner           INTEGER NOT NULL REFERENCES users(id),
-    data            BYTEA,
-    PRIMARY KEY (id),
-    UNIQUE (parent_id, name)
-);
 
 --
 -- charts --

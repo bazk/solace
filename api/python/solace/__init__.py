@@ -53,7 +53,7 @@ class Run(object):
         return 'ExperimentInstanceRun<%s,%s>' % (self.instance.id,str(self.id))
 
     def begin(self):
-        r = requests.post(self.experiment.api_url+'/instance/'+self.instance.id+'/'+str(self.id)+'/begin', cookies=self.experiment.cookies)
+        r = requests.post(self.experiment.api_url+'/'+self.instance.id+'/'+str(self.id)+'/begin', cookies=self.experiment.cookies)
 
         if r.status_code != 200:
             try:
@@ -66,7 +66,7 @@ class Run(object):
         if (progress > 1) or (progress < 0):
             raise Exception('Invalid value for progress.')
 
-        r = requests.post(self.experiment.api_url+'/instance/'+self.instance.id+'/'+str(self.id),
+        r = requests.post(self.experiment.api_url+'/'+self.instance.id+'/'+str(self.id),
                           data={
                             'progress': progress,
                             'results': parse_params(partial_results)
@@ -81,7 +81,7 @@ class Run(object):
                 raise Exception('Unknown error at posting progress.')
 
     def done(self, results=None):
-        r = requests.post(self.experiment.api_url+'/instance/'+self.instance.id+'/'+str(self.id)+'/done',
+        r = requests.post(self.experiment.api_url+'/'+self.instance.id+'/'+str(self.id)+'/done',
                           data={
                             'results': parse_params(results)
                           },
@@ -95,7 +95,7 @@ class Run(object):
                 raise Exception('Unknown error at posting progress.')
 
     def cancel(self):
-        r = requests.post(self.experiment.api_url+'/instance/'+self.instance.id+'/'+str(self.id)+'/cancel', cookies=self.experiment.cookies)
+        r = requests.post(self.experiment.api_url+'/'+self.instance.id+'/'+str(self.id)+'/cancel', cookies=self.experiment.cookies)
 
         if r.status_code != 200:
             try:
@@ -104,10 +104,10 @@ class Run(object):
             except:
                 raise Exception('Unknown error at posting progress.')
 
-    def upload(self, filename):
-        r = requests.post(self.experiment.api_url+'/instance/'+self.instance.id+'/'+str(self.id)+'/files',
+    def upload(self, path, filename='unnamed'):
+        r = requests.post(self.experiment.api_url+'/'+self.instance.id+'/'+str(self.id)+'/upload',
                           files={
-                            'file': open(filename, 'rb')
+                            'file': (filename, open(path, 'rb'))
                           },
                           cookies=self.experiment.cookies)
 
@@ -131,15 +131,12 @@ class Instance(object):
         self.runs = runs
 
 class Experiment(object):
-    def __init__(self, api_url, experiment_name, username, password):
+    def __init__(self, api_url, experiment_name, cookies):
         self.api_url = api_url
         self.name = experiment_name
-        self.username = username
-        self.password = password
+        self.cookies = cookies
 
-        self.cookies = self.__login()
-
-        r = requests.get(self.api_url+'/experiment/'+self.name, cookies=self.cookies)
+        r = requests.get(self.api_url, cookies=self.cookies)
 
         if r.status_code != 200:
             try:
@@ -156,22 +153,9 @@ class Experiment(object):
     def __repr__(self):
         return 'Experiment<%s, %s> (%s)' % (self.name, str(self.created_at), self.description)
 
-    def __login(self):
-        r = requests.post(self.api_url+'/sessions', data={'username': self.username, 'password': self.password})
-
-        if r.status_code != 200:
-            try:
-                res = r.json()
-                raise Exception(res['error']) # TODO: translate error "key" into a user friendly message
-            except:
-                raise Exception('Unknown error at login.')
-
-        return r.cookies
-
     def create_instance(self, num_runs, parameters):
-        r = requests.post(self.api_url+'/instances',
+        r = requests.post(self.api_url,
                           data={
-                            'experiment': self.name,
                             'num_runs': num_runs,
                             'parameters': parse_params(parameters)},
                           cookies=self.cookies)
@@ -199,7 +183,15 @@ def get_experiment(uri, username, password):
 
     hostname = m.group('hostname')
     port = m.group('port') or 80
-    api_url = 'http://%s:%s/api' % (hostname, port)
     experiment_name = m.group('experiment_name')
+    api_url = 'http://%s:%s/api/e/%s' % (hostname, port, experiment_name)
 
-    return Experiment(api_url, experiment_name, username, password)
+    r = requests.post('http://%s:%s/api/s' % (hostname, port), data={'username': username, 'password': password})
+    if r.status_code != 200:
+        try:
+            res = r.json()
+            raise Exception(res['error']) # TODO: translate error "key" into a user friendly message
+        except:
+            raise Exception('Unknown error at login.')
+
+    return Experiment(api_url, experiment_name, r.cookies)

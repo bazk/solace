@@ -2,32 +2,32 @@
 
 angular.module('solace.factories', []).
     factory('SessionFactory', function($resource) {
-        return $resource('/api/sessions');
-    }).
-
-    factory('ExperimentsFactory', function($resource) {
-        return $resource('/api/experiments');
+        return $resource('/api/s');
     }).
 
     factory('ExperimentFactory', function($resource) {
-        return $resource('/api/experiment/:name');
+        return $resource('/api/e/:expName');
     }).
 
     factory('InstanceFactory', function($resource) {
-        return $resource('/api/instance/:id');
+        return $resource('/api/e/:expName/:instId');
     }).
 
     factory('RunFactory', function($resource) {
-        return $resource('/api/instance/:instId/:runId');
+        return $resource('/api/e/:expName/:instId/:runId');
     }).
 
     factory('ResultFactory', function($resource) {
-        return $resource('/api/instance/:instId/:runId/result/:name');
-    }).
-
-    factory('FileFactory', function($resource) {
-        return $resource('/api/instance/:instId/:runId/files');
+        return $resource('/api/e/:expName/:instId/:runId/result/:name');
     });
+
+    // factory('ResultFactory', function($resource) {
+    //     return $resource('/api/instance/:instId/:runId/result/:name');
+    // }).
+
+    // factory('FileFactory', function($resource) {
+    //     return $resource('/api/instance/:instId/:runId/files');
+    // });
 
     //     return {
     //         getExperiments: function () {
