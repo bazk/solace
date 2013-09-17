@@ -5,10 +5,8 @@ angular.module('solace', ['ngAnimate', 'ngResource', 'ui.router', 'solace.contro
         $stateProvider.
             state('root', {
                 url: '',
-                controller: function ($scope, $location) {
-                    $scope.$on("$stateChangeBegin", function (e) {
-                        $location.path("/experiment");
-                    });
+                controller: function ($location) {
+                    $location.path("/experiment");
                 }
             }).
             state('login', {
