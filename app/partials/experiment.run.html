@@ -9,9 +9,22 @@
     <div ng-highchart="chart">
     </div>
 
-    <div class="list-group">
-        <a ng-repeat="file in run.files" href="#/viewer/{{ experiment.name }}/{{ file.id }}" class="list-group-item">{{ file.name }} - {{ file.size }} bytes ({{ file.created_at |  date:'dd/MM/yyyy HH:mm:ss' }})</a>
-    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="min-width: 200px;">Name</th>
+                <th style="min-width: 100px; width: 100px;">Size</th>
+                <th style="min-width: 190px; width: 190px;">Created at</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="file in run.files">
+                <td><a href="#/viewer/{{ experiment.name }}/{{ file.id }}">{{ file.name }}</a></td>
+                <td>{{ file.size | humanReadable }}</td>
+                <td>{{ file.created_at |  date:'dd/MM/yyyy HH:mm:ss' }}</td>
+            </tr>
+        </tbody>
+    </table>
 
     <div ng-repeat="(idx,res) in results">
         <h3>{{ res.timestamp }}</h3>
