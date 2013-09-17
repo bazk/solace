@@ -12,6 +12,8 @@ var instances = require('./routes/instances.js');
 var runs = require('./routes/runs.js');
 var files = require('./routes/files.js');
 
+var port = parseInt(process.argv.splice(2)[0]) || 3000;
+
 var app = express();
 app.use(express.logger('dev'));
 app.use(express.bodyParser());
@@ -44,4 +46,4 @@ app.get( '/api/e/:expName/:instId/:runId/result/:name', sessions.auth, db.connec
 app.get( '/api/f/:expName', sessions.auth, db.connect, permissions.read, files.list);
 app.get( '/api/f/:expName/:fileId', sessions.auth, db.connect, permissions.read, files.get);
 
-app.listen(3000);
+app.listen(port);
