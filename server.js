@@ -18,7 +18,10 @@ var app = express();
 app.use(express.logger('dev'));
 app.use(express.bodyParser());
 app.use(express.cookieParser());
-app.use(express.session({secret: 'asd87c9a8sc9a8j19m98asj982'}));
+app.use(express.session({
+    store: new db.sessionStore(),
+    secret: 'asd87c9a8sc9a8j19m98asj982'
+}));
 app.use(express.static(__dirname + '/app'));
 
 db.config(config.db_config);
