@@ -20,7 +20,7 @@ app.use(express.bodyParser());
 app.use(express.cookieParser());
 app.use(express.session({
     store: new db.sessionStore(),
-    secret: 'asd87c9a8sc9a8j19m98asj982'
+    secret: config.secret
 }));
 app.use(express.static(__dirname + '/app'));
 

@@ -5,3 +5,5 @@ exports.db_config = {
     host: 'localhost',
     port: 5432
 };
+
+exports.secret = 'secret';
