@@ -93,6 +93,7 @@ var srs2d = srs2d || {};
 
         this.curFile = new srs2d.SaveFile(arraybuffer);
         this.secondsLength = this.curFile.secondsLength;
+        this.timeout = (1/this.curFile.step_rate);
         this.draw();
     };
 
@@ -118,13 +119,20 @@ var srs2d = srs2d || {};
             self.clock = s
 
             if ((!self.doStop) && (self.curFile.current_step != self.curFile.last_step))
-                setTimeout(loop, 50);
+                setTimeout(loop, Math.floor(self.timeout * 1000));
         };
         setTimeout(loop, 1);
     };
 
-    srs2d.Viewer.prototype.stop = function() {
+    srs2d.Viewer.prototype.stop = function () {
         this.doStop = true;
+    };
+
+    srs2d.Viewer.prototype.setSpeed = function (mult) {
+        if (typeof mult !== 'number')
+            throw "setSpeed needs a number";
+
+        this.timeout = (1/this.curFile.step_rate) / mult;
     };
 
     srs2d.Viewer.prototype.onClockUpdate = function (callback) {

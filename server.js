@@ -11,6 +11,7 @@ var experiments = require('./routes/experiments.js');
 var instances = require('./routes/instances.js');
 var runs = require('./routes/runs.js');
 var files = require('./routes/files.js');
+var users = require('./routes/users.js');
 
 var port = parseInt(process.argv.splice(2)[0]) || 3000;
 
@@ -29,6 +30,8 @@ db.config(config.db_config);
 app.post('/api/s', db.connect, sessions.login);
 app.get('/api/s', sessions.get);
 app.delete('/api/s', sessions.logout);
+
+app.get('/api/u/:userId', sessions.auth, db.connect, users.get);
 
 app.get( '/api/e', sessions.auth, db.connect, experiments.list);
 app.post('/api/e', sessions.auth, db.connect, experiments.create);

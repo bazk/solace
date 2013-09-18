@@ -1,7 +1,7 @@
-<div class="error slide ng-hide" ng-show="showError">
+<div class="error slide ng-hide" ng-show="error.show">
     <div class="error-inner error-danger">
-        <button type="button" class="close" ng-click="closeError()">&times;</button>
-        <strong>Oops!</strong> {{ errorMessage }}
+        <button type="button" class="close" ng-click="error.show = false">&times;</button>
+        <strong>Oops!</strong> {{ error.message }}
     </div>
 </div>
 
@@ -17,11 +17,14 @@
 
 <i class="navbar-loading" ng-show="loading"></i>
 
-<form class="navbar-form navbar-right" role="search">
+<form class="navbar-form navbar-right" ng-show="user">
     <div class="btn-group">
-        <button type="button" class="btn btn-default dropdown-toggle" ng-click="logout()">
-            {{ session.userid }} <span class="caret"></span>
+        <button type="button" class="btn btn-default dropdown-toggle" ng-click="userDropdown = !userDropdown">
+            {{ user.username }} <span class="caret"></span>
         </button>
+        <ul class="dropdown-menu" role="menu" ng-show="userDropdown">
+            <li><a href="" ng-click="logout(); userDropdown=false">Logout</a></li>
+        </ul>
     </div>
 </form>
 

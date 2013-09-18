@@ -4,7 +4,7 @@ exports.list = function(req, res) {
                   ORDER BY created_at DESC;", [req.user], function(result) {
 
         req.db.done();
-        res.json(result.rows);
+        res.json({experiments: result.rows});
     });
 };
 

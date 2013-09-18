@@ -25,6 +25,10 @@ a:focus {
   text-decoration: underline;
 }
 
+.dropdown-menu {
+  display: block;
+}
+
 .progress-bar {
   background-color: @primary-color;
 }
@@ -467,12 +471,46 @@ a:focus {
     }
 
     .progress {
-      margin-left: 148px;
+      margin-left: 210px;
       margin-right: 10px;
 
       .progress-bar {
         -webkit-transition: width 1s linear;
                 transition: width 1s linear;
+      }
+    }
+
+    .speed-selector-toggle {
+      float: left;
+      background-color: rgb(61, 72, 126);
+      border-radius: 12px;
+      margin-left: 9px;
+      padding: 3px 11px;
+      color: white;
+      font-weight: bold;
+      font-size: 0.8em;
+      cursor: pointer;
+    }
+
+    .speed-selector-menu {
+      display: block;
+      top: auto;
+      bottom: 1px;
+      left: 148px;
+      width: 47px;
+      min-width: 0;
+      text-align: right;
+
+      li {
+        a {
+          padding: 1px 6px;
+          font-size: 0.7em;
+          font-weight: bold;
+
+          &:hover {
+            background-color: #3d487e;
+          }
+        }
       }
     }
   }

@@ -2,17 +2,8 @@
 
 angular.module('solace.controllers', []).
     controller('MainCtrl', function ($scope, $rootScope, $location, SessionFactory) {
-        $scope.session = SessionFactory.get(function (session) {
+        SessionFactory.get(function (session) {
             $rootScope.$broadcast('$sessionUpdate', session);
-        });
-
-        $scope.$on('$sessionUpdate', function (e, newSession) {
-            $scope.session = newSession;
-
-            if (!newSession.loggedIn) {
-                $rootScope.return_path = $location.path();
-                $location.path('/login');
-            }
         });
 
         $scope.$on('$accessDenied', function (e) {
@@ -20,47 +11,65 @@ angular.module('solace.controllers', []).
                 $rootScope.$broadcast('$sessionUpdate', session);
             });
         });
-    }).
 
-    controller('LoginCtrl', function ($scope, $rootScope, $location, SessionFactory) {
-        $scope.user = {};
-        $scope.showLoading = false;
-        $scope.showError = false;
-        $scope.errorMessage = "";
+        $scope.$on('$sessionUpdate', function (e, newSession) {
+            $scope.session = newSession;
 
-        if ($scope.session.loggedIn)
-            $location.path('/');
+            if (!newSession.loggedIn) {
+                $scope.return_path = $location.path();
+                $location.path('/login');
+            }
+            else if ($location.path() === '/login') {
+                $location.path('/experiment');
+            }
+            else if ($scope.return_path) {
+                $location.path($scope.return_path);
+            }
+        });
 
-        $scope.login = function () {
-            $scope.showLoading = true;
-            $scope.showError = false;
-
-            SessionFactory.save($scope.user, function (session) {
-                $scope.showLoading = false;
-
-                if (session.error) {
-                    $scope.errorMessage = session.error;
-                    $scope.showError = true;
-                    return;
-                }
-
+        $scope.logout = function () {
+            SessionFactory.delete(function(session) {
                 $rootScope.$broadcast('$sessionUpdate', session);
-                if ((typeof $rootScope.return_path === 'undefined') || ($rootScope.return_path === '/login'))
-                    $location.path('/');
-                else
-                    $location.path($rootScope.return_path);
             });
         };
     }).
 
-    controller('NavBarCtrl', function ($scope, $rootScope, $state, $location, SessionFactory) {
+    controller('LoginCtrl', function ($scope, $rootScope, $location, SessionFactory) {
+        $scope.show = false;
+        $scope.user = {};
         $scope.loading = false;
-        $scope.errorMessage = "";
-        $scope.showError = false;
+        $scope.error = null;
+
+        $scope.login = function () {
+            $scope.loading = true;
+            $scope.error = null;
+
+            SessionFactory.save($scope.user, function (session) {
+                $scope.loading = false;
+
+                if (session.error) {
+                    $scope.error = session.error;
+                    return;
+                }
+
+                $rootScope.$broadcast('$sessionUpdate', session);
+            });
+        };
+    }).
+
+    controller('NavBarCtrl', function ($scope, $rootScope, $state, $location, UserFactory) {
         $scope.menuitems = [
             {title: "Experiments", link: "#/experiment", section: "experiment", active: "", icon: "glyphicon glyphicon-tasks"},
             {title: "Viewer", link: "#/viewer", section: "viewer", active: "", icon: "glyphicon glyphicon-stats"},
         ];
+
+        $scope.user = null;
+        $scope.$on('$sessionUpdate', function (e, newSession) {
+            if (newSession.loggedIn)
+                $scope.user = UserFactory.get({userId: newSession.userid});
+            else
+                $scope.user = null;
+        });
 
         function update_active() {
             if ((typeof $state.current !== 'undefined') && ('section' in $state.current)) {
@@ -72,39 +81,31 @@ angular.module('solace.controllers', []).
                 });
             }
         }
+        update_active();
 
-        $scope.$on("$beginLoading", function (e) {
+        $scope.loading = false;
+        $scope.error = {show: false};
+
+        $scope.$on("$loadingStart", function (e) {
             $scope.loading = true;
-            $scope.showError = false;
+            $scope.error.show = false;
             update_active();
         });
 
-        $scope.$on("$doneLoading", function (e, error) {
+        $scope.$on("$loadingSuccess", function (e, error) {
             $scope.loading = false;
-            $scope.showError = false;
+            $scope.error.show = false;
         });
 
-        $scope.$on("$stateChangeError", function(event, current, previous, message) {
+        $scope.$on("$loadingError", function (e, message) {
             $scope.loading = false;
-            $scope.errorMessage = message;
-            $scope.showError = true;
+            $scope.error.show = true;
+            $scope.error.message = message;
         });
-
-        $scope.closeError = function () {
-            $scope.showError = false;
-        }
-
-        $scope.logout = function () {
-            SessionFactory.delete(function(session) {
-                $rootScope.$broadcast('$sessionUpdate', session);
-            });
-        }
-
-        update_active();
     }).
 
     controller('ViewerCtrl', function ($scope, $rootScope, $state, $http) {
-        $rootScope.$broadcast('$beginLoading');
+        $rootScope.$broadcast('$loadingStart');
 
         $scope.viewer = new srs2d.Viewer();
         $scope.progress = 0;
@@ -112,28 +113,35 @@ angular.module('solace.controllers', []).
         $scope.secondsLength = 0;
         $scope.playPauseIcon = "glyphicon-play";
 
+        $scope.speed = 1.0;
+        $scope.$watch('speed', function() {
+            $scope.viewer.setSpeed($scope.speed);
+        });
+
+        $scope.showSpeedSelector = false;
+
         if (typeof $state.params.fileId !== 'undefined') {
             $http.get('/api/f/'+$state.params.expId+'/'+$state.params.fileId, {responseType: "arraybuffer"}).success(function (buffer) {
                 $scope.viewer.load(buffer);
                 $scope.secondsLength = $scope.viewer.secondsLength;
-                $rootScope.$broadcast('$doneLoading');
+                $rootScope.$broadcast('$loadingSuccess');
             });
         }
         else
-            $rootScope.$broadcast('$doneLoading');
+            $rootScope.$broadcast('$loadingSuccess');
 
         $scope.$on("$fileLoadBegin", function(event) {
-            $rootScope.$broadcast('$beginLoading');
+            $rootScope.$broadcast('$loadingStart');
         });
 
         $scope.$on("$fileLoadError", function(event, file) {
-            $rootScope.$broadcast('$doneLoading');
+            $rootScope.$broadcast('$loadingSuccess');
         });
 
         $scope.$on("$fileLoadDone", function(event, file) {
             $scope.viewer.load(file.buffer);
             $scope.secondsLength = $scope.viewer.secondsLength;
-            $rootScope.$broadcast('$doneLoading');
+            $rootScope.$broadcast('$loadingSuccess');
         });
 
         var playing = false;
@@ -158,22 +166,33 @@ angular.module('solace.controllers', []).
     }).
 
     controller('ExperimentListCtrl', function ($scope, $rootScope, ExperimentFactory) {
-        $rootScope.$broadcast('$beginLoading');
-        $scope.experiments = ExperimentFactory.query(function () {
-            $rootScope.$broadcast('$doneLoading');
+        $rootScope.$broadcast('$loadingStart');
+        ExperimentFactory.get(function (res) {
+            if (res.error) {
+                $rootScope.$broadcast('$loadingError', res.error);
+                return;
+            }
+
+            $scope.experiments = res.experiments;
+            $rootScope.$broadcast('$loadingSuccess');
         });
     }).
 
     controller('ExperimentNewCtrl', function ($scope, $rootScope, ExperimentFactory) {
-        $rootScope.$broadcast('$beginLoading');
-        $rootScope.$broadcast('$doneLoading');
+        $rootScope.$broadcast('$loadingStart');
+        $rootScope.$broadcast('$loadingSuccess');
     }).
 
     controller('ExperimentDetailCtrl', function ($scope, $rootScope, $state, ExperimentFactory) {
-        $rootScope.$broadcast('$beginLoading');
+        $rootScope.$broadcast('$loadingStart');
 
-        $scope.experiment = ExperimentFactory.get({expName: $state.params.expName}, function () {
-            $rootScope.$broadcast('$doneLoading');
+        $scope.experiment = ExperimentFactory.get({expName: $state.params.expName}, function (res) {
+            if (res.error) {
+                $rootScope.$broadcast('$loadingError', res.error);
+                return;
+            }
+
+            $rootScope.$broadcast('$loadingSuccess');
             updateActiveInstance();
         });
 
@@ -194,31 +213,45 @@ angular.module('solace.controllers', []).
     }).
 
     controller('InstanceCtrl', function ($scope, $rootScope, $state, InstanceFactory) {
-        $rootScope.$broadcast('$beginLoading');
+        $rootScope.$broadcast('$loadingStart');
 
-        $scope.instance = InstanceFactory.get({expName: $state.params.expName, instId: $state.params.instId}, function () {
-            $rootScope.$broadcast('$doneLoading');
+        $scope.instance = InstanceFactory.get({expName: $state.params.expName, instId: $state.params.instId}, function (res) {
+            if (res.error) {
+                $rootScope.$broadcast('$loadingError', res.error);
+                return;
+            }
+
+            $rootScope.$broadcast('$loadingSuccess');
         });
     }).
 
-    controller('RunCtrl', function ($scope, $rootScope, $state, RunFactory, ResultFactory) {
-        $rootScope.$broadcast('$beginLoading');
+    controller('RunCtrl', function ($scope, $rootScope, $state, $timeout, RunFactory, ResultFactory) {
+        $rootScope.$broadcast('$loadingStart');
 
-        $scope.run = RunFactory.get({expName: $state.params.expName, instId: $state.params.instId, runId: $state.params.runId}, function () {
-            console.log($scope.run.files);
+        $scope.results = [];
+
+        $scope.run = RunFactory.get({expName: $state.params.expName, instId: $state.params.instId, runId: $state.params.runId}, function (res) {
+            if (res.error) {
+                $rootScope.$broadcast('$loadingError', res.error);
+                return;
+            }
+
             angular.forEach($scope.run.results, function (res) {
                 if ((res.type == 'integer') || (res.type == 'real')) {
-                    var r = ResultFactory.get({expName: $state.params.expName, instId: $state.params.instId, runId: $state.params.runId, name: res.name}, function () {
-                        $scope.chart.addSeries({
-                            name: res.name,
-                            data: (function () {
-                                var ret = [];
-                                for (var i=0; i<r.data.length; i++)
-                                    ret.push([new Date(r.data[i][0]).getTime(), parseFloat(r.data[i][1])]);
-                                return ret;
-                            })()
-                        });
+                    res.series = $scope.chart.addSeries({
+                        name: res.name
                     });
+
+                    res.getter = function () {
+                        var r = ResultFactory.get({expName: $state.params.expName, instId: $state.params.instId, runId: $state.params.runId, name: res.name}, function () {
+                            var ret = [];
+
+                            for (var i=0; i<r.data.length; i++)
+                                ret.push([new Date(r.data[i][0]).getTime(), parseFloat(r.data[i][1])]);
+
+                            res.series.setData(ret);
+                        });
+                    };
                 }
                 else {
                     var r = ResultFactory.get({instId: $state.params.instId, runId: $state.params.runId, name: res.name}, function () {
@@ -231,10 +264,20 @@ angular.module('solace.controllers', []).
                 }
             });
 
-            $rootScope.$broadcast('$doneLoading');
-        });
+            function update() {
+                if ($state.current.controller !== 'RunCtrl')
+                    return;
 
-        $scope.results = [];
+                angular.forEach($scope.run.results, function (res) {
+                    res.getter();
+                });
+
+                $timeout(update, 60*1000);
+            };
+            update();
+
+            $rootScope.$broadcast('$loadingSuccess');
+        });
 
         $scope.chart = function (element) {
             return new Highcharts.Chart({
@@ -243,6 +286,11 @@ angular.module('solace.controllers', []).
                 xAxis: { type: 'datetime' },
                 series: []
             });
+        };
+
+        $scope.sort = {
+            column: 'name',
+            reverse: false
         };
 
         $scope.goBack = function () {
