@@ -64,24 +64,35 @@ exports.update = function(req, res) {
             req.db.query('UPDATE runs SET progress = $3 WHERE id = $1 AND instance_id = $2;',
                         [runId, instId, progress], function(result) {
 
-                var stream = req.db.copyFrom("COPY run_result_values \
-                                                (run_id, instance_id, name, value, type) \
-                                                FROM STDIN WITH CSV;", function () {
+                req.db.query('SELECT MAX(moment) + 1 AS moment FROM run_result_values WHERE run_id = $1 AND instance_id = $2;',
+                        [runId, instId], function(result) {
 
-                    commit(function () {
-                        req.db.done();
-                        res.json(200);
+                    var moment = result.rows[0].moment || 0;
+
+                    req.db.query("INSERT INTO run_result_values (run_id, instance_id, moment, name, value, type) \
+                                    VALUES ($1, $2, $3, '_timestamp', EXTRACT(EPOCH FROM now())::integer::text, 'timestamp');",
+                        [runId, instId, moment], function(result) {
+
+                        var stream = req.db.copyFrom("COPY run_result_values \
+                                                        (run_id, instance_id, moment, name, value, type) \
+                                                        FROM STDIN WITH CSV;", function () {
+
+                            commit(function () {
+                                req.db.done();
+                                res.json(200);
+                            });
+                        });
+
+                        for (var i=0; i<results.length; i++) {
+                            var name = results[i]['name'],
+                                value = results[i]['value'],
+                                type = results[i]['type'];
+
+                            stream.write(runId+',"'+instId+'",'+moment+',"'+name+'","'+value+'",'+type+'\n');
+                        }
+                        stream.end();
                     });
                 });
-
-                for (var i=0; i<results.length; i++) {
-                    var name = results[i]['name'],
-                        value = results[i]['value'],
-                        type = results[i]['type'];
-
-                    stream.write(runId+',"'+instId+'","'+name+'","'+value+'",'+type+'\n');
-                }
-                stream.end();
             });
         });
     });
@@ -136,24 +147,35 @@ exports.done = function(req, res) {
                             WHERE id = $1 AND instance_id = $2;',
                         [runId, instId], function(result) {
 
-                var stream = req.db.copyFrom("COPY run_result_values \
-                                                (run_id, instance_id, name, value, type) \
-                                                FROM STDIN WITH CSV;", function () {
+                req.db.query('SELECT MAX(moment) + 1 AS moment FROM run_result_values WHERE run_id = $1 AND instance_id = $2;',
+                        [runId, instId], function(result) {
 
-                    commit(function () {
-                        req.db.done();
-                        res.json(200);
+                    var moment = result.rows[0].moment || 0;
+
+                    req.db.query("INSERT INTO run_result_values (run_id, instance_id, moment, name, value, type) \
+                                    VALUES ($1, $2, $3, '_timestamp', EXTRACT(EPOCH FROM now())::integer::text, 'timestamp');",
+                        [runId, instId, moment], function(result) {
+
+                        var stream = req.db.copyFrom("COPY run_result_values \
+                                                        (run_id, instance_id, moment, name, value, type) \
+                                                        FROM STDIN WITH CSV;", function () {
+
+                            commit(function () {
+                                req.db.done();
+                                res.json(200);
+                            });
+                        });
+
+                        for (var i=0; i<results.length; i++) {
+                            var name = results[i]['name'],
+                                value = results[i]['value'],
+                                type = results[i]['type'];
+
+                            stream.write(runId+',"'+instId+'",'+moment+',"'+name+'","'+value+'",'+type+'\n');
+                        }
+                        stream.end();
                     });
                 });
-
-                for (var i=0; i<results.length; i++) {
-                    var name = results[i]['name'],
-                        value = results[i]['value'],
-                        type = results[i]['type'];
-
-                    stream.write(runId+',"'+instId+'","'+name+'","'+value+'",'+type+'\n');
-                }
-                stream.end();
             });
         });
     });
@@ -250,28 +272,55 @@ exports.listFiles = function(req, res) {
     });
 };
 
-exports.getResult = function(req, res) {
+exports.getChartData = function(req, res) {
     var expName = req.params.expName,
         instId  = req.params.instId,
         runId   = parseInt(req.params.runId),
-        name     = req.params.name;
+        chartId      = parseInt(req.params.chartId);
 
-    req.db.query('SELECT v.inserted_at, v.value \
-                    FROM experiments e, instances i, run_result_values v \
-                    WHERE e.name = $1 AND i.exp_id = e.id AND i.id = $2 \
-                        AND v.instance_id = i.id \
-                        AND v.run_id = $3 \
-                        AND v.name = $4 \
-                    ORDER BY v.inserted_at;',
-                [expName, instId, runId, name], function(result) {
+    req.db.query('SELECT rv.id = cs.x AS isX, rv.id = cs.y AS isY, rv.name, rv.type \
+                    FROM experiments e, charts c, chart_series cs, experiment_result_variables rv \
+                    WHERE \
+                        e.name = $1 AND e.id = c.exp_id AND \
+                        c.id = $2 AND cs.chart_id = c.id AND \
+                        (rv.id = cs.x OR rv.id = cs.y);',
+                [expName, chartId], function (result) {
 
-        req.db.done();
+        if (result.rows.length != 2)
+            return res.json(400, {error: 'invalid_parameters'});
 
-        var results = [];
-        for (var i=0; i<result.rows.length; i++) {
-            results.push([result.rows[i].inserted_at, result.rows[i].value]);
+        var xName, yName, xType, yType;
+        if (result.rows[0].isX) {
+            xName = result.rows[0].name;
+            yName = result.rows[1].name;
+            xType = result.rows[0].type;
+            yType = result.rows[1].type;
+        }
+        else {
+            yName = result.rows[0].name;
+            xName = result.rows[1].name;
+            yType = result.rows[0].type;
+            xType = result.rows[1].type;
         }
 
-        res.json(200, {data: results});
+        req.db.query('SELECT r1.value AS x, r2.value AS y \
+                        FROM run_result_values r1, run_result_values r2 \
+                        WHERE \
+                            r1.run_id = $1 AND r1.instance_id = $2 AND \
+                            r2.run_id = $1 AND r2.instance_id = $2 AND \
+                            r1.name = $3 AND r2.name = $4 AND \
+                            r1.moment = r2.moment \
+                        ORDER BY r1.moment;',
+                    [runId, instId, xName, yName], function (result) {
+
+            req.db.done();
+
+            r = [];
+            for (var i=0; i < result.rows.length; i++) {
+                r.push([result.rows[i].x, result.rows[i].y]);
+            }
+
+            res.json({xType: xType, yType: yType, data: r});
+        });
     });
 };

@@ -6,9 +6,6 @@
         </div>
     </div>
 
-    <div ng-highchart="chart">
-    </div>
-
     <table class="table">
         <thead>
             <tr>
@@ -26,8 +23,5 @@
         </tbody>
     </table>
 
-    <div ng-repeat="(idx,res) in results">
-        <h3>{{ res.timestamp }}</h3>
-        {{ res.value }}
-    </div>
+    <div ng-repeat="chart in charts" sol-chart="chart"></div>
 </div>

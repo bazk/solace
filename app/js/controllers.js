@@ -32,6 +32,10 @@ angular.module('solace.controllers', []).
                 $rootScope.$broadcast('$sessionUpdate', session);
             });
         };
+
+        $scope.goBack = function () {
+            window.history.back();
+        };
     }).
 
     controller('LoginCtrl', function ($scope, $rootScope, $location, SessionFactory) {
@@ -225,10 +229,13 @@ angular.module('solace.controllers', []).
         });
     }).
 
-    controller('RunCtrl', function ($scope, $rootScope, $state, $timeout, RunFactory, ResultFactory) {
+    controller('RunCtrl', function ($scope, $rootScope, $state, $timeout, RunFactory, ChartFactory, ChartDataFactory) {
         $rootScope.$broadcast('$loadingStart');
 
-        $scope.results = [];
+        $scope.sort = {
+            column: 'name',
+            reverse: false
+        };
 
         $scope.run = RunFactory.get({expName: $state.params.expName, instId: $state.params.instId, runId: $state.params.runId}, function (res) {
             if (res.error) {
@@ -236,64 +243,62 @@ angular.module('solace.controllers', []).
                 return;
             }
 
-            angular.forEach($scope.run.results, function (res) {
-                if ((res.type == 'integer') || (res.type == 'real')) {
-                    res.series = $scope.chart.addSeries({
-                        name: res.name
-                    });
-
-                    res.getter = function () {
-                        var r = ResultFactory.get({expName: $state.params.expName, instId: $state.params.instId, runId: $state.params.runId, name: res.name}, function () {
-                            var ret = [];
-
-                            for (var i=0; i<r.data.length; i++)
-                                ret.push([new Date(r.data[i][0]).getTime(), parseFloat(r.data[i][1])]);
-
-                            res.series.setData(ret);
-                        });
-                    };
-                }
-                else {
-                    var r = ResultFactory.get({instId: $state.params.instId, runId: $state.params.runId, name: res.name}, function () {
-                        for (var i=0; i<r.data.length; i++)
-                            $scope.results.push({
-                                timestamp: r.data[i][0],
-                                value: r.data[i][1]
-                            });
-                    });
-                }
-            });
-
-            function update() {
-                if ($state.current.controller !== 'RunCtrl')
-                    return;
-
-                angular.forEach($scope.run.results, function (res) {
-                    res.getter();
-                });
-
-                $timeout(update, 60*1000);
-            };
-            update();
-
             $rootScope.$broadcast('$loadingSuccess');
         });
 
-        $scope.chart = function (element) {
-            return new Highcharts.Chart({
-                chart: { renderTo: element[0] },
-                title: { text: 'Results' },
-                xAxis: { type: 'datetime' },
-                series: []
+        ChartFactory.get({expName: $state.params.expName}, function (charts) {
+            angular.forEach(charts, function (chart) {
+                chart.render = function (element) {
+                    chart.highchart = new Highcharts.Chart({
+                        chart: { renderTo: element[0] },
+                        xAxis: { type: 'datetime' }
+                    });
+
+                    angular.forEach(chart.series, function (series) {
+                        series.highseries = chart.highchart.addSeries({
+                            name: series.name,
+                            type: series.type
+                        });
+                    });
+
+                    (function update () {
+                        if ($state.current.controller !== 'RunCtrl')
+                            return;
+
+                        console.log("UPDATING");
+                        chart.getter();
+
+                        $timeout(update, 5*1000);
+                    })();
+                };
+
+                chart.getter = function () {
+                    ChartDataFactory.get({expName: $state.params.expName, instId: $state.params.instId, runId: $state.params.runId, chartId: chart.id}, function (seriesData) {
+                        angular.forEach(seriesData.data, function (row) {
+                            if (seriesData.xType === 'integer')
+                                row[0] = parseInt(row[0]);
+                            else if (seriesData.xType === 'real')
+                                row[0] = parseFloat(row[0]);
+                            else if (seriesData.xType === 'boolean')
+                                row[0] = /true/i.test(row[0]) || /t/i.test(row[0]);
+                            else if (seriesData.xType === 'timestamp')
+                                row[0] = parseInt(row[0]);
+
+                            if (seriesData.yType === 'integer')
+                                row[1] = parseInt(row[1]);
+                            else if (seriesData.yType === 'real')
+                                row[1] = parseFloat(row[1]);
+                            else if (seriesData.yType === 'boolean')
+                                row[1] = /true/i.test(row[1]) || /t/i.test(row[1]);
+                            else if (seriesData.yType === 'timestamp')
+                                row[1] = parseInt(row[1]);
+                        });
+
+                        chart.series[0].highseries.setData(seriesData.data);
+                    });
+                };
             });
-        };
 
-        $scope.sort = {
-            column: 'name',
-            reverse: false
-        };
-
-        $scope.goBack = function () {
-            window.history.back();
-        };
+            $scope.charts = charts;
+        });
     });

@@ -30,9 +30,9 @@ angular.module('solace.directives', []).
             });
         }
     }).
-    directive('ngHighchart', function() {
+    directive('solChart', function() {
         return function (scope, element, attrs) {
-            scope[attrs.ngHighchart] = scope[attrs.ngHighchart](element);
+            scope[attrs.solChart].render(element);
         }
     }).
     directive('srsViewer', function() {

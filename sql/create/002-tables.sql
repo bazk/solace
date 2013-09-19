@@ -128,9 +128,9 @@ CREATE TABLE runs (
 CREATE TABLE run_result_values (
     run_id          INTEGER NOT NULL,
     instance_id     CHAR(40) NOT NULL,
+    moment          INTEGER NOT NULL,
     name            CITEXT NOT NULL,
     type            variable_type NOT NULL,
-    inserted_at     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     value           TEXT NOT NULL,
     FOREIGN KEY (run_id, instance_id) REFERENCES runs (id, instance_id) ON DELETE CASCADE
 );
@@ -147,26 +147,24 @@ CREATE TABLE run_files (
 -- charts --
 --
 
--- CREATE TABLE charts (
---     id              SERIAL PRIMARY KEY,
---     name            TEXT NOT NULL,
---     description     TEXT,
---     created_by      INTEGER NOT NULL REFERENCES users(id),
---     created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
--- );
+CREATE TABLE charts (
+    id              SERIAL PRIMARY KEY,
+    exp_id          INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
+    name            TEXT NOT NULL,
+    description     TEXT,
+    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
 
--- CREATE TABLE chart_config (
---     chart_id        INTEGER NOT NULL REFERENCES charts(id),
---     key             TEXT NOT NULL,
---     value           TEXT NOT NULL
--- );
+CREATE TABLE chart_config (
+    chart_id        INTEGER NOT NULL REFERENCES charts(id),
+    key             TEXT NOT NULL,
+    value           TEXT NOT NULL
+);
 
--- CREATE TABLE chart_series (
---     chart_id        INTEGER NOT NULL REFERENCES charts(id),
---     name            TEXT NOT NULL,
---     type            TEXT,
---     x               TEXT NOT NULL,
---     x_source        source_type NOT NULL,
---     y               TEXT NOT NULL,
---     y_source        source_type NOT NULL,
--- );
+CREATE TABLE chart_series (
+    chart_id        INTEGER NOT NULL REFERENCES charts(id),
+    name            TEXT NOT NULL,
+    type            TEXT,
+    x               INTEGER NOT NULL REFERENCES experiment_result_variables(id),
+    y               INTEGER NOT NULL REFERENCES experiment_result_variables(id)
+);

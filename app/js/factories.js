@@ -23,4 +23,12 @@ angular.module('solace.factories', []).
 
     factory('ResultFactory', function($resource) {
         return $resource('/api/e/:expName/:instId/:runId/result/:name');
+    }).
+
+    factory('ChartFactory', function($resource) {
+        return $resource('/api/c/:expName');
+    }).
+
+    factory('ChartDataFactory', function($resource) {
+        return $resource('/api/e/:expName/:instId/:runId/chart-data/:chartId');
     });
