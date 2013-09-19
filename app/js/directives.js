@@ -32,7 +32,10 @@ angular.module('solace.directives', []).
     }).
     directive('solChart', function() {
         return function (scope, element, attrs) {
-            scope[attrs.solChart].render(element);
+            scope.$watchCollection(attrs.solChart, function (render) {
+                if (render)
+                    render(element);
+            });
         }
     }).
     directive('srsViewer', function() {
