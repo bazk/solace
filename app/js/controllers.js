@@ -116,8 +116,6 @@ angular.module('solace.controllers', []).
     }).
 
     controller('ViewerCtrl', function ($scope, $rootScope, $state, $http, $viewer) {
-        $rootScope.$broadcast('$loadingStart');
-
         $scope.progress = 0;
         $scope.clock = 0;
         $scope.secondsLength = 0;
@@ -148,35 +146,50 @@ angular.module('solace.controllers', []).
             $scope.progress = clock / $viewer.getSecondsLength();
         });
 
-        var xhr = new XMLHttpRequest();
+        $scope.$on("$fileLoadBegin", function (e) {
+            $rootScope.$broadcast('$loadingStart');
+        });
 
-        xhr.onload = function(e) {
-            $scope.$apply(function () {
+        $scope.$on("$fileLoadDone", function (e, data) {
+            $viewer.load(data);
+            $scope.secondsLength = $viewer.getSecondsLength();
+            $rootScope.$broadcast('$loadingSuccess');
+        });
+
+        if ($state.params.fileId) {
+            $rootScope.$broadcast('$loadingStart');
+
+            var xhr = new XMLHttpRequest();
+
+            xhr.onload = function(e) {
                 $viewer.load(xhr.response);
-                $scope.secondsLength = $viewer.getSecondsLength();
-                $rootScope.$broadcast("$loadingSuccess");
-            });
-        };
 
-        xhr.onprogress = function (e) {
-            var progress = null;
-            if (e.lengthComputable)
-                progress = e.loaded / e.total;
+                $scope.$apply(function () {
+                    $scope.secondsLength = $viewer.getSecondsLength();
+                    $rootScope.$broadcast("$loadingSuccess");
+                });
+            };
 
-            $scope.$apply(function () {
-                $rootScope.$broadcast("$loadingProgress", progress);
-            });
-        };
+            xhr.onprogress = function (e) {
+                var progress = null;
+                if (e.lengthComputable)
+                    progress = e.loaded / e.total;
 
-        xhr.onerror = function(e) {
-            $scope.$apply(function () {
-                $rootScope.$broadcast('$loadingError', xhr.responseText);
-            });
-        };
+                $scope.$apply(function () {
+                    $rootScope.$broadcast("$loadingProgress", progress);
+                });
+            };
 
-        xhr.open("GET", '/api/f/'+$state.params.expId+'/'+$state.params.fileId, true);
-        xhr.responseType = "arraybuffer";
-        xhr.send();
+            xhr.onerror = function(e) {
+                $scope.$apply(function () {
+                    $rootScope.$broadcast('$loadingError', xhr.responseText);
+                });
+            };
+
+            xhr.open("GET", '/api/f/'+$state.params.expId+'/'+$state.params.fileId, true);
+            xhr.responseType = "arraybuffer";
+            xhr.send();
+        }
     }).
 
     controller('ExperimentListCtrl', function ($scope, $rootScope, ExperimentFactory) {
@@ -275,10 +288,9 @@ angular.module('solace.controllers', []).
                         if ($state.current.controller !== 'RunCtrl')
                             return;
 
-                        console.log("UPDATING");
                         chart.getter();
 
-                        $timeout(update, 5*1000);
+                        $timeout(update, 60*1000);
                     })();
                 };
 

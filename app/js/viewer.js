@@ -8,186 +8,170 @@ angular.module('solace.viewer', []).
     }).
 
     service('$viewer', function ($rootScope, $viewerFile) {
-        this.TYPE = {
+        var $this = this;
+
+        $this.TYPE = {
             CIRCLE: 0x00,
             SQUARE: 0x01
         };
 
-        this.zoom = 250;
-        this.playing = false;
-        this.canvas = null;
+        $this.zoom = 250;
+        $this.playing = false;
+        $this.canvas = null;
 
-        this.size = {width: null, height: null};
+        $this.size = {width: null, height: null};
 
-        this.posToScreen = function (pos) {
-            var self = this;
-            var res = {x: pos.x * self.zoom, y: (-pos.y) * self.zoom };
-            res.x += self.size.width / 2;
-            res.y += self.size.height / 2;
+        $rootScope.$on("$stateChangeStart", function () {
+            $this.playing = false;
+        });
+
+        $this.posToScreen = function (pos) {
+            var res = {x: pos.x * $this.zoom, y: (-pos.y) * $this.zoom };
+            res.x += $this.size.width / 2;
+            res.y += $this.size.height / 2;
             return res;
         };
 
-        this.bind = function (element) {
-            var self = this;
+        $this.bind = function (element) {
+            $this.canvas = element;
+            $this.size.width = element.width();
+            $this.size.height = element.height();
+            $this.ctx = $this.canvas.get(0).getContext("2d");
 
-            self.canvas = element;
-            self.size.width = element.width();
-            self.size.height = element.height();
-            self.ctx = self.canvas.get(0).getContext("2d");
-            
-            self.canvas.mousewheel(function (event, delta, deltaX, deltaY) {
-                self.zoom += 10 * deltaY;
-                self.draw();
+            $this.canvas.mousewheel(function (event, delta, deltaX, deltaY) {
+                $this.zoom += 10 * deltaY;
+                $this.draw();
             });
 
-            self.draw();
+            $this.draw();
         };
 
-        this.draw = function () {
-            var self = this;
-
-            if (!($viewerFile.loaded && self.canvas))
+        $this.draw = function () {
+            if (!($viewerFile.loaded && $this.canvas))
                 return;
 
-            self.ctx.fillStyle = "#f7f7f7";
-            self.ctx.fillRect(0, 0, self.size.width, self.size.height);
+            $this.ctx.fillStyle = "#f7f7f7";
+            $this.ctx.fillRect(0, 0, $this.size.width, $this.size.height);
 
             for (var i=0; i < Object.keys($viewerFile.objects).length; i++) {
                 var obj = $viewerFile.objects[i];
 
                 switch (obj.type) {
-                    case self.TYPE.CIRCLE:
-                        var pos = self.posToScreen(obj.pos),
-                            radius = obj.radius * self.zoom;
+                    case $this.TYPE.CIRCLE:
+                        var pos = $this.posToScreen(obj.pos),
+                            radius = obj.radius * $this.zoom;
 
-                        self.ctx.beginPath();
-                        self.ctx.arc(pos.x,pos.y, radius, 0, 2*Math.PI, true);
-                        self.ctx.stroke();
+                        $this.ctx.beginPath();
+                        $this.ctx.arc(pos.x,pos.y, radius, 0, 2*Math.PI, true);
+                        $this.ctx.stroke();
                         break;
 
-                    case self.TYPE.SQUARE:
-                        var pos = self.posToScreen(obj.pos),
-                            width = obj.width * self.zoom,
-                            height = obj.height * self.zoom;
+                    case $this.TYPE.SQUARE:
+                        var pos = $this.posToScreen(obj.pos),
+                            width = obj.width * $this.zoom,
+                            height = obj.height * $this.zoom;
 
                         pos.x -= width / 2;
                         pos.y -= height / 2;
 
-                        self.ctx.beginPath();
-                        self.ctx.rect(pos.x,pos.y, width, height);
-                        self.ctx.stroke();
+                        $this.ctx.beginPath();
+                        $this.ctx.rect(pos.x,pos.y, width, height);
+                        $this.ctx.stroke();
                         break;
                 }
             }
         };
 
-        this.play = function() {
-            var self = this;
-
+        $this.play = function() {
             if (!$viewerFile.loaded)
                 return;
 
             // if ended, then rewind
             if ($viewerFile.currentStep == $viewerFile.lastStep)
-                self.rewind(false);
+                $this.rewind(false);
 
-            self.playing = true;
-            $rootScope.$apply(function () {
-                $rootScope.$broadcast('$viewerPlaybackStart');
-            });
+            $this.playing = true;
+            $rootScope.$broadcast('$viewerPlaybackStart');
 
-            self.loop();
+            $this.loop();
         };
 
-        this.pause = function () {
-            var self = this;
-
-            if (self.playing) {
-                self.playing = false;
-                $rootScope.$apply(function () {
-                    $rootScope.$broadcast('$viewerPlaybackPause');
-                });
+        $this.pause = function () {
+            if ($this.playing) {
+                $this.playing = false;
+                $rootScope.$broadcast('$viewerPlaybackPause');
             }
         };
 
-        this.playPause = function() {
-            var self = this;
-
+        $this.playPause = function() {
             if (!$viewerFile.loaded)
                 return;
 
-            if (self.playing)
-                self.pause();
+            if ($this.playing)
+                $this.pause();
             else
-                self.play();
+                $this.play();
         };
 
-        this.rewind = function (redraw) {
+        $this.rewind = function (redraw) {
             $viewerFile.offset = 5;
             $viewerFile.currentStep = $viewerFile.firstStep;
-            self.clock = 0;
+            $this.clock = 0;
 
             if ((typeof redraw === 'undefined') || redraw)
-                self.draw();
+                $this.draw();
 
-            $rootScope.$apply(function () {
-                $rootScope.$broadcast('$viewerClockUpdate', self.clock);
-            });
+            $rootScope.$broadcast('$viewerClockUpdate', $this.clock);
         };
 
-        this.loop = function () {
-            var self = this;
-
-            (function loop () {
-                if ((!$viewerFile.loaded) || (!self.playing))
+        $this.loop = function () {
+            function loop () {
+                if ((!$viewerFile.loaded) || (!$this.playing))
                     return;
 
                 if ($viewerFile.currentStep >= $viewerFile.lastStep)
-                    self.pause();
+                    $rootScope.$apply(function () {
+                        $this.pause();
+                    });
 
                 $viewerFile.step();
-                self.draw();
+                $this.draw();
 
                 var s = Math.ceil($viewerFile.currentStep / $viewerFile.stepRate);
-                if (self.clock != s)
+                if ($this.clock != s)
                     $rootScope.$apply(function () {
                         $rootScope.$broadcast('$viewerClockUpdate', s);
                     });
-                self.clock = s
+                $this.clock = s
 
-                setTimeout(loop, Math.floor(self.timeout * 1000));
-            })();
+                setTimeout(loop, Math.floor($this.timeout * 1000));
+            };
+            setTimeout(loop, 1);
         };
 
-        this.load = function (arraybuffer) {
-            var self = this;
-
+        $this.load = function (arraybuffer) {
             if ((typeof arraybuffer != 'object') || (arraybuffer.constructor != ArrayBuffer))
                 throw "Error! Call to function load with invalid parameter type (expected an ArrayBuffer).";
 
 
-            self.pause();
+            $this.pause();
 
             $viewerFile.load(arraybuffer);
-            self.timeout = (1/$viewerFile.stepRate);
-            self.clock = 0;
-            self.draw();
+            $this.timeout = (1/$viewerFile.stepRate);
+            $this.clock = 0;
+            $this.draw();
 
-            $rootScope.$apply(function () {
-                $rootScope.$broadcast('$viewerClockUpdate', self.clock);
-            });
+            $rootScope.$broadcast('$viewerClockUpdate', $this.clock);
         };
 
-        this.setSpeed = function (mult) {
-            var self = this;
-
+        $this.setSpeed = function (mult) {
             if (typeof mult !== 'number')
                 throw "Expected number but setSpeed got " + (typeof mult);
 
-            self.timeout = (1/$viewerFile.stepRate) / mult;
+            $this.timeout = (1/$viewerFile.stepRate) / mult;
         };
 
-        this.getSecondsLength = function () {
+        $this.getSecondsLength = function () {
             if (!$viewerFile.loaded)
                 return 0;
 
@@ -196,7 +180,9 @@ angular.module('solace.viewer', []).
     }).
 
     service('$viewerFile', function () {
-        this.OP = {
+        var $this = this;
+
+        $this.OP = {
             TYPE: 0x00,
             POS: 0x01,
             RADIUS: 0x02,
@@ -204,185 +190,185 @@ angular.module('solace.viewer', []).
             SIZE: 0x04
         };
 
-        this.loaded = false;
+        $this.loaded = false;
 
-        this.load = function(arraybuffer) {
+        $this.load = function(arraybuffer) {
             if ((typeof arraybuffer != 'object') || (arraybuffer.constructor != ArrayBuffer))
                 throw "Error! Call to constructor with invalid parameter type (expected an ArrayBuffer).";
 
             var b;
 
-            this.buffer = new DataView(arraybuffer);
-            this.offset = 0;
-            this.objects = {};
+            $this.buffer = new DataView(arraybuffer);
+            $this.offset = 0;
+            $this.objects = {};
 
-            var h1 = this.readByte(false),
-                h2 = this.readByte(false),
-                h3 = this.readByte(false),
+            var h1 = $this.readByte(false),
+                h2 = $this.readByte(false),
+                h3 = $this.readByte(false),
                 S = 'S'.charCodeAt(0),
                 R = 'R'.charCodeAt(0);
 
             if ((h1 != S) || (h2 != R) || (h3 != S))
                 throw "Error! Invalid or corrupted file.";
 
-            this.version = this.readByte(false);
-            this.stepRate = this.readByte(false);
+            $this.version = $this.readByte(false);
+            $this.stepRate = $this.readByte(false);
 
-            if ((this.version < 1) || (this.version > 1))
+            if (($this.version < 1) || ($this.version > 1))
                 throw "Error! File version not supported.";
 
-            this.lastStep = null;
-            var tmpOffset = this.offset;
-            this.offset = this.buffer.byteLength - 1;
-            while (this.offset > 0) {
-                b = this.buffer.getUint8(this.offset--);
+            $this.lastStep = null;
+            var tmpOffset = $this.offset;
+            $this.offset = $this.buffer.byteLength - 1;
+            while ($this.offset > 0) {
+                b = $this.buffer.getUint8($this.offset--);
                 if ((b == 0xF1) || (b == 0xF1)) {
-                    b = this.buffer.getUint8(this.offset--);
+                    b = $this.buffer.getUint8($this.offset--);
 
                     if (b == 0xFF) {
-                        b = this.buffer.getUint8(this.offset--);
+                        b = $this.buffer.getUint8($this.offset--);
 
                         if (b != 0xFF) {
-                            this.offset += 4;
-                            this.lastStep = this.readInt();
+                            $this.offset += 4;
+                            $this.lastStep = $this.readInt();
                             break;
                         }
                     }
                 }
             }
-            this.offset = tmpOffset;
+            $this.offset = tmpOffset;
 
-            if (this.lastStep == null)
+            if ($this.lastStep == null)
                 throw "Error! No steps found on the file.";
 
-            this.stepLength = this.lastStep + 1;
-            this.milisecondsLength = Math.ceil((this.stepLength * 1000) / this.stepRate);
-            this.secondsLength = Math.ceil(this.stepLength / this.stepRate);
+            $this.stepLength = $this.lastStep + 1;
+            $this.milisecondsLength = Math.ceil(($this.stepLength * 1000) / $this.stepRate);
+            $this.secondsLength = Math.ceil($this.stepLength / $this.stepRate);
 
-            if (!this.seekToKeystep())
+            if (!$this.seekToKeystep())
                 throw "Error! No keysteps found on the file.";
 
-            this.currentStep = this.readInt();
-            this.firstStep = this.currentStep;
+            $this.currentStep = $this.readInt();
+            $this.firstStep = $this.currentStep;
 
-            if (this.firstStep != 0)
+            if ($this.firstStep != 0)
                 console.warn('Warning! First step # is not zero.');
 
-            this.readOperations();
-            this.loaded = true;
+            $this.readOperations();
+            $this.loaded = true;
         };
 
-        this.step = function () {
-            if (!this.buffer)
+        $this.step = function () {
+            if (!$this.buffer)
                 return;
 
-            this.seekToStep();
-            this.currentStep = this.readInt()
-            this.readOperations();
+            $this.seekToStep();
+            $this.currentStep = $this.readInt()
+            $this.readOperations();
         };
 
-        this.hasBytes = function () {
-            if (!this.buffer)
+        $this.hasBytes = function () {
+            if (!$this.buffer)
                 return false;
 
-            return this.offset < (this.buffer.byteLength - 1);
+            return $this.offset < ($this.buffer.byteLength - 1);
         };
 
-        this.readByte = function (escape) {
-            if (!this.buffer)
+        $this.readByte = function (escape) {
+            if (!$this.buffer)
                 throw "File not loaded!";
 
             if (typeof escape === 'undefined')
                 escape = true;
 
-            var r = this.buffer.getUint8(this.offset++);
+            var r = $this.buffer.getUint8($this.offset++);
 
             if ((!escape) || (r != 0xFF))
                 return r;
             else
-                return this.buffer.getUint8(this.offset++);
+                return $this.buffer.getUint8($this.offset++);
         };
 
-        this.readInt = function (escape) {
-            if (!this.buffer)
+        $this.readInt = function (escape) {
+            if (!$this.buffer)
                 throw "File not loaded!";
 
             if (typeof escape === 'undefined')
                 escape = true;
 
             if (!escape) {
-                var r = this.buffer.getUint32(this.offset);
-                this.offset += 4;
+                var r = $this.buffer.getUint32($this.offset);
+                $this.offset += 4;
                 return r;
             }
 
             var ab = new ArrayBuffer(4),
                 dv = new DataView(ab);
 
-            dv.setUint8(0, this.readByte());
-            dv.setUint8(1, this.readByte());
-            dv.setUint8(2, this.readByte());
-            dv.setUint8(3, this.readByte());
+            dv.setUint8(0, $this.readByte());
+            dv.setUint8(1, $this.readByte());
+            dv.setUint8(2, $this.readByte());
+            dv.setUint8(3, $this.readByte());
 
             return dv.getUint32(0);
         };
 
-        this.readShort = function (escape) {
-            if (!this.buffer)
+        $this.readShort = function (escape) {
+            if (!$this.buffer)
                 throw "File not loaded!";
 
             if (typeof escape === 'undefined')
                 escape = true;
 
             if (!escape) {
-                var r = this.buffer.getUint16(this.offset);
-                this.offset += 2;
+                var r = $this.buffer.getUint16($this.offset);
+                $this.offset += 2;
                 return r;
             }
 
             var ab = new ArrayBuffer(2),
                 dv = new DataView(ab);
 
-            dv.setUint8(0, this.readByte());
-            dv.setUint8(1, this.readByte());
+            dv.setUint8(0, $this.readByte());
+            dv.setUint8(1, $this.readByte());
 
             return dv.getUint16(0);
         };
 
-        this.readFloat = function (escape) {
-            if (!this.buffer)
+        $this.readFloat = function (escape) {
+            if (!$this.buffer)
                 throw "File not loaded!";
 
             if (typeof escape === 'undefined')
                 escape = true;
 
             if (!escape) {
-                var r = this.buffer.getFloat32(this.offset);
-                this.offset += 4;
+                var r = $this.buffer.getFloat32($this.offset);
+                $this.offset += 4;
                 return r;
             }
 
             var ab = new ArrayBuffer(4),
                 dv = new DataView(ab);
 
-            dv.setUint8(0, this.readByte());
-            dv.setUint8(1, this.readByte());
-            dv.setUint8(2, this.readByte());
-            dv.setUint8(3, this.readByte());
+            dv.setUint8(0, $this.readByte());
+            dv.setUint8(1, $this.readByte());
+            dv.setUint8(2, $this.readByte());
+            dv.setUint8(3, $this.readByte());
 
             return dv.getFloat32(0);
         };
 
-        this.seekToKeystep = function () {
-            if (!this.buffer)
+        $this.seekToKeystep = function () {
+            if (!$this.buffer)
                 throw "File not loaded!";
 
             var b;
 
-            while (this.offset < (this.buffer.byteLength - 1)) {
-                b = this.readByte(false);
+            while ($this.offset < ($this.buffer.byteLength - 1)) {
+                b = $this.readByte(false);
                 if (b == 0xFF) {
-                    b = this.readByte(false);
+                    b = $this.readByte(false);
                     if (b == 0xF0)
                         return true;
                 }
@@ -391,16 +377,16 @@ angular.module('solace.viewer', []).
             return false;
         };
 
-        this.seekToStep = function () {
-            if (!this.buffer)
+        $this.seekToStep = function () {
+            if (!$this.buffer)
                 throw "File not loaded!";
 
             var b;
 
-            while (this.offset < (this.buffer.byteLength - 1)) {
-                b = this.readByte(false);
+            while ($this.offset < ($this.buffer.byteLength - 1)) {
+                b = $this.readByte(false);
                 if (b == 0xFF) {
-                    b = this.readByte(false);
+                    b = $this.readByte(false);
                     if ((b == 0xF0) || (b == 0xF1))
                         return true;
                 }
@@ -409,40 +395,40 @@ angular.module('solace.viewer', []).
             return false;
         };
 
-        this.readOperations = function () {
-            if (!this.buffer)
+        $this.readOperations = function () {
+            if (!$this.buffer)
                 throw "File not loaded!";
 
             var op, id;
 
-            while (this.offset < (this.buffer.byteLength - 1)) {
-                op = this.buffer.getUint8(this.offset);
+            while ($this.offset < ($this.buffer.byteLength - 1)) {
+                op = $this.buffer.getUint8($this.offset);
                 if (op == 0xFF)
                     break;
 
-                this.offset++;
+                $this.offset++;
 
-                id = this.readShort();
-                if (!this.objects.hasOwnProperty(id))
-                    this.objects[id] = {};
+                id = $this.readShort();
+                if (!$this.objects.hasOwnProperty(id))
+                    $this.objects[id] = {};
 
                 switch (op) {
-                    case this.OP.TYPE:
-                        this.objects[id].type = this.readByte();
+                    case $this.OP.TYPE:
+                        $this.objects[id].type = $this.readByte();
                         break;
-                    case this.OP.POS:
-                        this.objects[id].pos = {x: this.readFloat(), y: this.readFloat()};
+                    case $this.OP.POS:
+                        $this.objects[id].pos = {x: $this.readFloat(), y: $this.readFloat()};
                         break;
-                    case this.OP.RADIUS:
-                        this.objects[id].radius = this.readFloat();
+                    case $this.OP.RADIUS:
+                        $this.objects[id].radius = $this.readFloat();
                         break;
-                    case this.OP.ORIENTATION:
-                        this.objects[id].sin = this.readFloat();
-                        this.objects[id].cos = this.readFloat();
+                    case $this.OP.ORIENTATION:
+                        $this.objects[id].sin = $this.readFloat();
+                        $this.objects[id].cos = $this.readFloat();
                         break;
-                    case this.OP.SIZE:
-                        this.objects[id].width = this.readFloat();
-                        this.objects[id].height = this.readFloat();
+                    case $this.OP.SIZE:
+                        $this.objects[id].width = $this.readFloat();
+                        $this.objects[id].height = $this.readFloat();
                         break;
                     default:
                         throw "Error! Invalid or corrupted file (invalid operation code '0x"+op.toString(16)+"')."

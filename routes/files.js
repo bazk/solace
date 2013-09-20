@@ -1,4 +1,6 @@
-var fs = require('fs');
+var fs = require('fs'),
+    crypto = require('crypto'),
+    cfg = require('../config.js');
 
 exports.list = function(req, res) {
     var expName = req.params.expName;
@@ -17,21 +19,27 @@ exports.get = function(req, res) {
     var expName = req.params.expName,
         fileId = req.params.fileId;
 
-    req.db.query('SELECT f.id, f.exp_id, f.name, f.type, f.size, f.created_at, f.data \
+    if (!cfg.secret)
+        throw "Error! Secret must be configured in config.js.";
+
+    req.db.query('SELECT f.id, f.exp_id, f.name, f.type, f.size, f.created_at \
                     FROM experiments e, experiment_files f \
                     WHERE e.name = $1 AND f.id = $2 AND f.exp_id = e.id;',
                 [expName, fileId], function(result) {
 
-        if (result.rows.length < 1) {
-            req.db.done();
+        req.db.done();
+
+        if (result.rows.length < 1)
             return res.json(404, {error: 'not_found'});
-        }
 
         var file = result.rows[0];
 
-        res.setHeader('Content-disposition', 'attachment; filename=' + file.name);
-        res.setHeader('Content-type', file.type);
-        res.send(200, new Buffer(file.data, 'binary'));
+        var expire = Math.round(new Date().getTime() / 1000) + 3600; // 1 hour
+        var md5 = crypto.createHash('md5');
+        md5.update(cfg.secret+expire.toString());
+        var hash = md5.digest('base64').replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+
+        res.redirect(302, '/files/'+file.id+'?s='+hash+'&e='+expire);
     });
 };
 

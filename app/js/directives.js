@@ -54,7 +54,7 @@ angular.module('solace.directives', []).
 
                 fileReader.onload = function (e) {
                     files[0].buffer = this.result;
-                    scope.$broadcast('$fileLoadDone', files[0]);
+                    scope.$broadcast('$fileLoadDone', this.result);
                 };
 
                 fileReader.onerror = function (e) {

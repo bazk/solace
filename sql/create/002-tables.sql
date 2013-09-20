@@ -82,8 +82,7 @@ CREATE TABLE experiment_files (
     name            TEXT NOT NULL,
     type            TEXT DEFAULT 'application/octet-stream',
     size            BIGINT NOT NULL,
-    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    data            BYTEA,
+    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
     PRIMARY KEY (id)
 );
 

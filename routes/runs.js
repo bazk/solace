@@ -1,4 +1,5 @@
-var fs = require('fs');
+var fs = require('fs'),
+    cfg = require('../config.js');
 
 exports.get = function(req, res) {
     var expName = req.params.expName,
@@ -213,6 +214,9 @@ exports.upload = function(req, res) {
 
     var file = req.files.file;
 
+    if (!cfg.uploadPath)
+        throw "Error! Upload path must be configured in config.js.";
+
     req.db.query('SELECT r.id, r.instance_id, r.started_at, r.finished_at, r.progress, r.canceled \
                     FROM experiments e, instances i, runs r \
                     WHERE e.name = $1 AND e.id = i.exp_id AND i.id = $2 AND r.id = $3;',
@@ -225,22 +229,35 @@ exports.upload = function(req, res) {
 
         var run = result.rows[0];
 
-        fs.readFile(file.path, 'hex', function (err, data) {
-            data = '\\x' + data;
+        req.db.transaction(function (commit, rollback) {
+            req.db.query('INSERT INTO experiment_files (exp_id, name, type, size) \
+                            (SELECT id,$2,$3,$4 FROM experiments WHERE name = $1) \
+                            RETURNING id;',
+                        [expName,
+                         file.name || 'unnamed',
+                         file.type || 'application/octet-stream',
+                         file.size], function(result) {
 
-            req.db.transaction(function (commit, rollback) {
-                req.db.query('INSERT INTO experiment_files (exp_id, name, type, size, data) \
-                                (SELECT id,$2,$3,$4,$5 FROM experiments WHERE name = $1) \
-                                RETURNING id;',
-                            [expName,
-                             file.name || 'unnamed',
-                             file.type || 'application/octet-stream',
-                             file.size,
-                             data], function(result) {
+                var fileId = result.rows[0].id;
 
-                    req.db.query('INSERT INTO run_files (run_id, instance_id, file_id) \
-                                    VALUES ($1, $2, $3);',
-                                [runId, instId, result.rows[0].id], function(result) {
+                req.db.query('INSERT INTO run_files (run_id, instance_id, file_id) \
+                                VALUES ($1, $2, $3);',
+                            [runId, instId, fileId], function(result) {
+
+                    var is = fs.createReadStream(file.path);
+                    var os = fs.createWriteStream(cfg.uploadPath+'/'+fileId);
+
+                    is.pipe(os);
+
+                    is.on('error', function () {
+                        fs.unlinkSync(file.path);
+
+                        console.log(err);
+                        res.json(500, {error: 'write_error'});
+                    });
+
+                    is.on('end',function() {
+                        fs.unlinkSync(file.path);
 
                         commit(function () {
                             req.db.done();
