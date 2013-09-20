@@ -1,8 +1,8 @@
 <div class="viewer">
-    <canvas width="1280" height="720" srs-viewer="viewer"></canvas>
+    <canvas width="1280" height="720" sol-viewer></canvas>
 
     <div class="controls">
-        <button type="button" class="btn btn-primary" ng-click="play()"><span class="glyphicon" ng-class="playPauseIcon"></span></button>
+        <button type="button" class="btn btn-primary" ng-click="playPause()"><span class="glyphicon" ng-class="playPauseIcon"></span></button>
         <span class="clock">{{ clock | secondsToTime }} / {{ secondsLength | secondsToTime }}</span>
         <div class="dropdown speed-selector">
             <div class="dropdown-toggle speed-selector-toggle" ng-click="showSpeedSelector = !showSpeedSelector">{{ speed.toFixed(1) }}x</div>

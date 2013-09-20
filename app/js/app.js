@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('solace', ['ngAnimate', 'ngResource', 'ui.router', 'solace.controllers', 'solace.directives', 'solace.factories', 'solace.filters']).
+angular.module('solace', ['ngAnimate', 'ngResource', 'ui.router', 'solace.viewer', 'solace.controllers', 'solace.directives', 'solace.factories', 'solace.filters']).
     config(function($stateProvider, $httpProvider) {
         $stateProvider.
             state('root', {

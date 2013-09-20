@@ -89,6 +89,7 @@ angular.module('solace.controllers', []).
 
         $scope.loading = false;
         $scope.error = {show: false};
+        $scope.progress = null;
 
         $scope.$on("$loadingStart", function (e) {
             $scope.loading = true;
@@ -96,77 +97,86 @@ angular.module('solace.controllers', []).
             update_active();
         });
 
+        $scope.$on("$loadingProgress", function (e, progress) {
+            $scope.progress = progress;
+        });
+
         $scope.$on("$loadingSuccess", function (e, error) {
             $scope.loading = false;
             $scope.error.show = false;
+            $scope.progress = null;
         });
 
         $scope.$on("$loadingError", function (e, message) {
             $scope.loading = false;
             $scope.error.show = true;
             $scope.error.message = message;
+            $scope.progress = null;
         });
     }).
 
-    controller('ViewerCtrl', function ($scope, $rootScope, $state, $http) {
+    controller('ViewerCtrl', function ($scope, $rootScope, $state, $http, $viewer) {
         $rootScope.$broadcast('$loadingStart');
 
-        $scope.viewer = new srs2d.Viewer();
         $scope.progress = 0;
         $scope.clock = 0;
         $scope.secondsLength = 0;
         $scope.playPauseIcon = "glyphicon-play";
 
-        $scope.speed = 1.0;
-        $scope.$watch('speed', function() {
-            $scope.viewer.setSpeed($scope.speed);
-        });
+        $scope.percentComplete = null;
 
         $scope.showSpeedSelector = false;
-
-        if (typeof $state.params.fileId !== 'undefined') {
-            $http.get('/api/f/'+$state.params.expId+'/'+$state.params.fileId, {responseType: "arraybuffer"}).success(function (buffer) {
-                $scope.viewer.load(buffer);
-                $scope.secondsLength = $scope.viewer.secondsLength;
-                $rootScope.$broadcast('$loadingSuccess');
-            });
-        }
-        else
-            $rootScope.$broadcast('$loadingSuccess');
-
-        $scope.$on("$fileLoadBegin", function(event) {
-            $rootScope.$broadcast('$loadingStart');
+        $scope.speed = 1.0;
+        $scope.$watch('speed', function() {
+            $viewer.setSpeed($scope.speed);
         });
 
-        $scope.$on("$fileLoadError", function(event, file) {
-            $rootScope.$broadcast('$loadingSuccess');
-        });
-
-        $scope.$on("$fileLoadDone", function(event, file) {
-            $scope.viewer.load(file.buffer);
-            $scope.secondsLength = $scope.viewer.secondsLength;
-            $rootScope.$broadcast('$loadingSuccess');
-        });
-
-        var playing = false;
-        $scope.play = function () {
-            if (!playing) {
-                $scope.viewer.play();
-                $scope.playPauseIcon = "glyphicon-pause";
-            }
-            else {
-                $scope.viewer.stop();
-                $scope.playPauseIcon = "glyphicon-play";
-            }
-            playing = !playing;
+        $scope.playPause = function () {
+            $viewer.playPause();
         };
 
-        $scope.viewer.onClockUpdate(function (clock) {
-            $scope.$apply(function () {
-                $scope.clock = clock;
-                $scope.progress = clock / $scope.viewer.secondsLength;
-            });
+        $scope.$on("$viewerPlaybackStart", function (e) {
+            $scope.playPauseIcon = "glyphicon-pause";
         });
+
+        $scope.$on("$viewerPlaybackPause", function (e) {
+            $scope.playPauseIcon = "glyphicon-play";
+        });
+
+        $scope.$on("$viewerClockUpdate", function (e, clock) {
+            $scope.clock = clock;
+            $scope.progress = clock / $viewer.getSecondsLength();
+        });
+
+        var xhr = new XMLHttpRequest();
+
+        xhr.onload = function(e) {
+            $scope.$apply(function () {
+                $viewer.load(xhr.response);
+                $scope.secondsLength = $viewer.getSecondsLength();
+                $rootScope.$broadcast("$loadingSuccess");
+            });
+        };
+
+        xhr.onprogress = function (e) {
+            var progress = null;
+            if (e.lengthComputable)
+                progress = e.loaded / e.total;
+
+            $scope.$apply(function () {
+                $rootScope.$broadcast("$loadingProgress", progress);
+            });
+        };
+
+        xhr.onerror = function(e) {
+            $scope.$apply(function () {
+                $rootScope.$broadcast('$loadingError', xhr.responseText);
+            });
+        };
+
+        xhr.open("GET", '/api/f/'+$state.params.expId+'/'+$state.params.fileId, true);
+        xhr.responseType = "arraybuffer";
+        xhr.send();
     }).
 
     controller('ExperimentListCtrl', function ($scope, $rootScope, ExperimentFactory) {

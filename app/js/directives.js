@@ -38,11 +38,6 @@ angular.module('solace.directives', []).
             });
         }
     }).
-    directive('srsViewer', function() {
-        return function (scope, element, attrs) {
-            scope[attrs.srsViewer].bind(element);
-        }
-    }).
     directive('solFile', function() {
         return function (scope, element, attrs) {
             element.bind('change', function (e) {
