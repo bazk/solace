@@ -2,20 +2,22 @@
     <canvas width="1280" height="720" sol-viewer></canvas>
 
     <div class="controls">
-        <button type="button" class="btn btn-primary" ng-click="playPause()"><span class="glyphicon" ng-class="playPauseIcon"></span></button>
-        <span class="clock">{{ clock | secondsToTime }} / {{ secondsLength | secondsToTime }}</span>
+        <button type="button" class="btn btn-primary" ng-click="viewer.playPause()"><span class="glyphicon" ng-class="playPauseIcon"></span></button>
+        <span class="clock">{{ viewer.clock | secondsToTime }} / {{ viewer.length | secondsToTime }}</span>
         <div class="dropdown speed-selector">
-            <div class="dropdown-toggle speed-selector-toggle" ng-click="showSpeedSelector = !showSpeedSelector">{{ speed.toFixed(1) }}x</div>
+            <div class="dropdown-toggle speed-selector-toggle" ng-click="showSpeedSelector = !showSpeedSelector">{{ viewer.speed.toFixed(1) }}x</div>
             <ul class="dropdown-menu speed-selector-menu" ng-show="showSpeedSelector">
-                <li><a href="" ng-click="speed = 16; showSpeedSelector = false">16.0x</a></li>
-                <li><a href="" ng-click="speed = 8; showSpeedSelector = false">8.0x</a></li>
-                <li><a href="" ng-click="speed = 4; showSpeedSelector = false">4.0x</a></li>
-                <li><a href="" ng-click="speed = 2; showSpeedSelector = false">2.0x</a></li>
-                <li><a href="" ng-click="speed = 1; showSpeedSelector = false">1.0x</a></li>
+                <li><a href="" ng-click="viewer.speed = 64; showSpeedSelector = false">64.0x</a></li>
+                <li><a href="" ng-click="viewer.speed = 32; showSpeedSelector = false">32.0x</a></li>
+                <li><a href="" ng-click="viewer.speed = 16; showSpeedSelector = false">16.0x</a></li>
+                <li><a href="" ng-click="viewer.speed = 8; showSpeedSelector = false">8.0x</a></li>
+                <li><a href="" ng-click="viewer.speed = 4; showSpeedSelector = false">4.0x</a></li>
+                <li><a href="" ng-click="viewer.speed = 2; showSpeedSelector = false">2.0x</a></li>
+                <li><a href="" ng-click="viewer.speed = 1; showSpeedSelector = false">1.0x</a></li>
             </ul>
         </div>
         <div class="progress">
-            <div class="progress-bar" role="progressbar" style="width: {{ progress * 100 }}%;"></div>
+            <div class="progress-bar" role="progressbar" style="width: {{ viewer.progress * 100 }}%;"></div>
         </div>
     </div>
 

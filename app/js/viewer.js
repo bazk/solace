@@ -16,9 +16,12 @@ angular.module('solace.viewer', []).
         };
 
         $this.zoom = 250;
+        $this.speed = 1.0;
+        $this.clock = 0;
+        $this.progress = 0;
+        $this.length = 0;
         $this.playing = false;
         $this.canvas = null;
-
         $this.size = {width: null, height: null};
 
         $rootScope.$on("$stateChangeStart", function () {
@@ -137,14 +140,12 @@ angular.module('solace.viewer', []).
                 $viewerFile.step();
                 $this.draw();
 
-                var s = Math.ceil($viewerFile.currentStep / $viewerFile.stepRate);
-                if ($this.clock != s)
-                    $rootScope.$apply(function () {
-                        $rootScope.$broadcast('$viewerClockUpdate', s);
-                    });
-                $this.clock = s
+                $rootScope.$apply(function () {
+                    $this.clock = Math.ceil($viewerFile.currentStep / $viewerFile.stepRate);
+                    $this.progress = $this.clock / $viewerFile.secondsLength;
+                });
 
-                setTimeout(loop, Math.floor($this.timeout * 1000));
+                setTimeout(loop, Math.floor((1/$viewerFile.stepRate) / $this.speed * 1000));
             };
             setTimeout(loop, 1);
         };
@@ -157,25 +158,13 @@ angular.module('solace.viewer', []).
             $this.pause();
 
             $viewerFile.load(arraybuffer);
-            $this.timeout = (1/$viewerFile.stepRate);
+            $this.speed = 1.0;
             $this.clock = 0;
+            $this.progress = 0;
+            $this.length = $viewerFile.secondsLength;
             $this.draw();
 
             $rootScope.$broadcast('$viewerClockUpdate', $this.clock);
-        };
-
-        $this.setSpeed = function (mult) {
-            if (typeof mult !== 'number')
-                throw "Expected number but setSpeed got " + (typeof mult);
-
-            $this.timeout = (1/$viewerFile.stepRate) / mult;
-        };
-
-        $this.getSecondsLength = function () {
-            if (!$viewerFile.loaded)
-                return 0;
-
-            return $viewerFile.secondsLength;
         };
     }).
 

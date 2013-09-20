@@ -116,22 +116,11 @@ angular.module('solace.controllers', []).
     }).
 
     controller('ViewerCtrl', function ($scope, $rootScope, $state, $http, $viewer) {
-        $scope.progress = 0;
-        $scope.clock = 0;
-        $scope.secondsLength = 0;
+        $rootScope.$broadcast('$loadingStart');
+
+        $scope.viewer = $viewer;
         $scope.playPauseIcon = "glyphicon-play";
-
-        $scope.percentComplete = null;
-
         $scope.showSpeedSelector = false;
-        $scope.speed = 1.0;
-        $scope.$watch('speed', function() {
-            $viewer.setSpeed($scope.speed);
-        });
-
-        $scope.playPause = function () {
-            $viewer.playPause();
-        };
 
         $scope.$on("$viewerPlaybackStart", function (e) {
             $scope.playPauseIcon = "glyphicon-pause";
@@ -139,11 +128,6 @@ angular.module('solace.controllers', []).
 
         $scope.$on("$viewerPlaybackPause", function (e) {
             $scope.playPauseIcon = "glyphicon-play";
-        });
-
-        $scope.$on("$viewerClockUpdate", function (e, clock) {
-            $scope.clock = clock;
-            $scope.progress = clock / $viewer.getSecondsLength();
         });
 
         $scope.$on("$fileLoadBegin", function (e) {
@@ -156,7 +140,9 @@ angular.module('solace.controllers', []).
             $rootScope.$broadcast('$loadingSuccess');
         });
 
-        if ($state.params.fileId) {
+        if (!$state.params.fileId)
+            $rootScope.$broadcast('$loadingSuccess');
+        else {
             $rootScope.$broadcast('$loadingStart');
 
             var xhr = new XMLHttpRequest();
@@ -165,7 +151,6 @@ angular.module('solace.controllers', []).
                 $viewer.load(xhr.response);
 
                 $scope.$apply(function () {
-                    $scope.secondsLength = $viewer.getSecondsLength();
                     $rootScope.$broadcast("$loadingSuccess");
                 });
             };
