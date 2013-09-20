@@ -171,11 +171,11 @@ angular.module('solace.controllers', []).
             };
 
             xhr.onprogress = function (e) {
-                var progress = null;
-                if (e.lengthComputable)
-                    progress = e.loaded / e.total;
-
                 $scope.$apply(function () {
+                    var progress = null;
+                    if (e.lengthComputable)
+                        progress = e.loaded / e.total;
+
                     $rootScope.$broadcast("$loadingProgress", progress);
                 });
             };
