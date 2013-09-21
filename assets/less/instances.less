@@ -1,0 +1,101 @@
+.instances {
+  width: 15%;
+  height: 100%;
+  float: left;
+
+  background-color: #f5f5f5;
+
+  border: 1px solid #e3e3e3;
+  border-width: 0 1px 0 0;
+
+  margin-bottom: 0;
+
+  .instances-item {
+    position: relative;
+    display: block;
+    padding: 10px 15px;
+    margin-bottom: -1px;
+
+    background-color: #fff;
+
+    border: 1px solid #e3e3e3;
+    border-width: 1px 0 1px 0px;
+
+    color: #555;
+
+    opacity: 0.8;
+
+    -webkit-transition: opacity ease-in 0.3s;
+       -moz-transition: opacity ease-in 0.3s;
+         -o-transition: opacity ease-in 0.3s;
+            transition: opacity ease-in 0.3s;
+
+    &:hover,
+    &:focus {
+      color: #333;
+      cursor: pointer;
+      opacity: 1;
+      a {
+        color: #333;
+      }
+
+      .popover {
+        left: 280px;
+        opacity: 1;
+      }
+    }
+
+    &:first-child {
+      .border-top-radius(0);
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+      .border-bottom-radius(0);
+    }
+
+    a {
+      color: #555;
+
+      &:hover,
+      &:focus {
+        color: #333;
+        text-decoration: none;
+      }
+    }
+
+    .popover {
+      top: -25px;
+      left: -500px;
+      width: 300px;
+      min-width: 0;
+
+      opacity: 0;
+      display: block;
+      -webkit-transition: opacity ease-in 0.6s;
+         -moz-transition: opacity ease-in 0.6s;
+           -o-transition: opacity ease-in 0.6s;
+              transition: opacity ease-in 0.6s;
+
+      .arrow {
+        top: 51px;
+      }
+    }
+
+    &.active {
+      color: #333;
+      background-color: #feffe2;
+      opacity: 1;
+
+      a {
+        color: #333;
+      }
+    }
+  }
+}
+
+.instance-details {
+  width: 85%;
+  height: 100%;
+  float: left;
+}

@@ -36,6 +36,10 @@ angular.module('solace.controllers', []).
         $scope.goBack = function () {
             window.history.back();
         };
+
+        $scope.go = function (path) {
+            $location.path(path);
+        };
     }).
 
     controller('LoginCtrl', function ($scope, $rootScope, $location, SessionFactory) {
@@ -257,10 +261,27 @@ angular.module('solace.controllers', []).
         ChartFactory.get({expName: $state.params.expName}, function (charts) {
             angular.forEach(charts, function (chart) {
                 chart.render = function (element) {
-                    chart.highchart = new Highcharts.Chart({
-                        chart: { renderTo: element[0] },
-                        xAxis: { type: 'datetime' }
+                    var chartConfig = {};
+
+                    chart.config.forEach(function (cfg) {
+                        var cur = chartConfig,
+                            path = cfg.key.split('.');
+
+                        for (var i=0; i < path.length-1; i++) {
+                            if (!cur[path[i]])
+                                cur[path[i]] = {};
+
+                            cur = cur[path[i]];
+                        }
+
+                        cur[path[path.length-1]] = cfg.value;
                     });
+
+                    if (!chartConfig.chart)
+                        chartConfig.chart = {};
+                    chartConfig.chart.renderTo = element[0];
+
+                    chart.highchart = new Highcharts.Chart(chartConfig);
 
                     angular.forEach(chart.series, function (series) {
                         series.highseries = chart.highchart.addSeries({

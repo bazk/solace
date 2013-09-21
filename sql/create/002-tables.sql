@@ -157,7 +157,8 @@ CREATE TABLE charts (
 CREATE TABLE chart_config (
     chart_id        INTEGER NOT NULL REFERENCES charts(id),
     key             TEXT NOT NULL,
-    value           TEXT NOT NULL
+    value           TEXT NOT NULL,
+    type            variable_type NOT NULL
 );
 
 CREATE TABLE chart_series (

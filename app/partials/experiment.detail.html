@@ -1,12 +1,26 @@
-<div class="list-group instances">
-    <h4 class="title">{{experiment.name}}</h4>
+<div class="toolbar">
+</div>
 
-    <a ng-repeat="instance in experiment.instances" href="#/experiment/{{experiment.name}}/{{instance.id}}" class="list-group-item" ng-class="instance.active">
-        <div class="list-group-item-heading"><strong>{{ instance.id | limitTo:8 }}</strong> {{instance.comment}}</div>
+<div class="instances">
+
+    <div ng-repeat="instance in experiment.instances" class="instances-item" ng-class="instance.active" ng-click="go('/experiment/{{experiment.name}}/{{instance.id}}')">
+        <a href="#/experiment/{{experiment.name}}/{{instance.id}}">
+            <strong>{{ instance.id | limitTo:8 }}</strong> {{instance.comment}}
+        </a>
+
         <div class="progress">
             <div class="progress-bar" style="width: {{instance.progress*100}}%;"></div>
         </div>
-    </a>
+
+        <div class="popover right">
+            <div class="arrow"></div>
+            <h3 class="popover-title">Parameters</h3>
+            <div class="popover-content">
+                Not Implemented.
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <div ui-view class="instance-details"></div>
