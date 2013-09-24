@@ -13,7 +13,7 @@ html {
     margin:         0;
     padding:        0;
     height:         100%;
-    overflow-x:     hidden;
+    overflow:       hidden;
 }
 
 a {
@@ -38,8 +38,7 @@ a:focus {
 .main {
   width: 100%;
   height: 100%;
-  padding-top: 51px;
-  padding-bottom: 43px;
+  padding-bottom: 51px;
 }
 
 .draggable {
@@ -371,16 +370,29 @@ a:focus {
 }
 
 .viewer {
-  width: 1280px;
-  position: relative;
-  top: 30px;
-  left: 50%;
-  margin-left: -640px;
+  height: 95%;
+  margin: 15px 40px;
 
-  .box-shadow(0 3px 3px rgba(0,0,0,.1));
+  border: 1px solid #f0f0f0;
 
-  .controls {
+  .viewer-header {
     position: relative;
+    z-index: 1100;
+    height: 42px;
+    padding: 6px;
+    opacity: 0.75;
+  }
+
+  canvas {
+    position: relative;
+    z-index: 1000;
+    margin-top: -42px;
+    .box-shadow(3px 3px 3px rgba(0,0,0,.1));
+  }
+
+  .viewer-controls {
+    position: relative;
+    z-index: 1100;
     height: 38px;
     margin-top: -43px;
     padding-top: 9px;
@@ -473,6 +485,7 @@ a:focus {
 .tabs {
   margin-top: 10px;
   padding-left: 4px;
+  height: 41px;
   .clearfix();
 
   border-bottom: 1px solid #ddd;

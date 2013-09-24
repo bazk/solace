@@ -1,7 +1,12 @@
-<div class="viewer">
-    <canvas width="1280" height="720" sol-viewer></canvas>
+<div class="viewer" sol-viewer>
+    <div class="viewer-header">
+        <button type="button" class="btn btn-default" ng-click="goBack()"><span class="glyphicon glyphicon-chevron-left"></span></button>
+        <!-- <input type="file" sol-file> -->
+    </div>
 
-    <div class="controls">
+    <canvas width="854" height="480"></canvas>
+
+    <div class="viewer-controls">
         <button type="button" class="btn btn-primary" ng-click="viewer.playPause()"><span class="glyphicon" ng-class="playPauseIcon"></span></button>
         <span class="clock">{{ viewer.clock | secondsToTime }} / {{ viewer.length | secondsToTime }}</span>
         <div class="dropdown speed-selector">
@@ -20,6 +25,4 @@
             <div class="progress-bar" role="progressbar" style="width: {{ viewer.progress * 100 }}%;"></div>
         </div>
     </div>
-
-    <input type="file" sol-file/>
 </div>

@@ -1,9 +1,31 @@
 'use strict';
 
 angular.module('solace.viewer', []).
-    directive('solViewer', function ($viewer) {
+    directive('solViewer', function ($window, $viewer) {
         return function (scope, element, attrs) {
-            $viewer.bind(element);
+            var canvas = element.children('canvas');
+
+            if (canvas)
+                $viewer.bind(canvas);
+
+            function resizeCanvas() {
+                canvas.attr('width', element.width());
+                canvas.attr('height', element.height());
+                $viewer.resize();
+            }
+            resizeCanvas();
+
+            var rTimeout;
+            $(window).resize(function() {
+                clearTimeout(rTimeout);
+                rTimeout = setTimeout(resizeCanvas, 100);
+            });
+
+            var oTimeout;
+            $(window).onorientationchange = function() {
+                clearTimeout(oTimeout);
+                oTimeout = setTimeout(resizeCanvas, 50);
+            }
         }
     }).
 
@@ -49,12 +71,23 @@ angular.module('solace.viewer', []).
             $this.draw();
         };
 
+        $this.resize = function () {
+            if (!$this.canvas)
+                return;
+
+            $this.size.width = $this.canvas.width();
+            $this.size.height = $this.canvas.height();
+            $this.draw();
+        }
+
         $this.draw = function () {
             if (!($viewerFile.loaded && $this.canvas))
                 return;
 
             $this.ctx.fillStyle = "#f7f7f7";
             $this.ctx.fillRect(0, 0, $this.size.width, $this.size.height);
+
+            $this.ctx.font = "11px Arial";
 
             for (var i=0; i < Object.keys($viewerFile.objects).length; i++) {
                 var obj = $viewerFile.objects[i];
@@ -67,6 +100,13 @@ angular.module('solace.viewer', []).
                         $this.ctx.beginPath();
                         $this.ctx.arc(pos.x,pos.y, radius, 0, 2*Math.PI, true);
                         $this.ctx.stroke();
+
+                        $this.ctx.fillStyle = "#000000";
+                        if (obj.opt1 != null)
+                            $this.ctx.fillText(obj.opt1.toFixed(2), pos.x+radius+5, pos.y+radius+5);
+                        if (obj.opt2 != null)
+                            $this.ctx.fillText(obj.opt2.toFixed(2), pos.x+radius+5, pos.y+radius+20);
+
                         break;
 
                     case $this.TYPE.SQUARE:
@@ -176,7 +216,9 @@ angular.module('solace.viewer', []).
             POS: 0x01,
             RADIUS: 0x02,
             ORIENTATION: 0x03,
-            SIZE: 0x04
+            SIZE: 0x04,
+            OPT1: 0x05,
+            OPT2: 0x06
         };
 
         $this.loaded = false;
@@ -203,7 +245,7 @@ angular.module('solace.viewer', []).
             $this.version = $this.readByte(false);
             $this.stepRate = $this.readByte(false);
 
-            if (($this.version < 1) || ($this.version > 1))
+            if (($this.version < 1) || ($this.version > 2))
                 throw "Error! File version not supported.";
 
             $this.lastStep = null;
@@ -398,8 +440,11 @@ angular.module('solace.viewer', []).
                 $this.offset++;
 
                 id = $this.readShort();
-                if (!$this.objects.hasOwnProperty(id))
+                if (!$this.objects.hasOwnProperty(id)) {
                     $this.objects[id] = {};
+                    $this.objects[id].opt1 = null;
+                    $this.objects[id].opt2 = null;
+                }
 
                 switch (op) {
                     case $this.OP.TYPE:
@@ -419,6 +464,13 @@ angular.module('solace.viewer', []).
                         $this.objects[id].width = $this.readFloat();
                         $this.objects[id].height = $this.readFloat();
                         break;
+                    case $this.OP.OPT1:
+                        $this.objects[id].opt1 = $this.readFloat();
+                        break;
+                    case $this.OP.OPT2:
+                        $this.objects[id].opt2 = $this.readFloat();
+                        break;
+
                     default:
                         throw "Error! Invalid or corrupted file (invalid operation code '0x"+op.toString(16)+"')."
                 }

@@ -140,7 +140,6 @@ angular.module('solace.controllers', []).
 
         $scope.$on("$fileLoadDone", function (e, data) {
             $viewer.load(data);
-            $scope.secondsLength = $viewer.getSecondsLength();
             $rootScope.$broadcast('$loadingSuccess');
         });
 
