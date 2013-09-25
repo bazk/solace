@@ -307,7 +307,7 @@ exports.getChartData = function(req, res) {
             return res.json(400, {error: 'invalid_parameters'});
 
         var xName, yName, xType, yType;
-        if (result.rows[0].isX) {
+        if ((result.rows[0].isX) || (result.rows[0].isx)) {
             xName = result.rows[0].name;
             yName = result.rows[1].name;
             xType = result.rows[0].type;
