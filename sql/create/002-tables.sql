@@ -134,6 +134,8 @@ CREATE TABLE run_result_values (
     FOREIGN KEY (run_id, instance_id) REFERENCES runs (id, instance_id) ON DELETE CASCADE
 );
 
+CREATE INDEX run_result_values_idx ON run_result_values (run_id, instance_id, name);
+
 CREATE TABLE run_files (
     run_id          INTEGER NOT NULL,
     instance_id     CHAR(40) NOT NULL,
