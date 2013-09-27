@@ -21,6 +21,9 @@ import requests
 import json
 
 def parse_params(params):
+    if params is None:
+        return json.dumps([])
+
     ret = []
     for key,val in params.iteritems():
         if isinstance(val, str):
