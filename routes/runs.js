@@ -321,12 +321,22 @@ exports.getChartData = function(req, res) {
         }
 
         req.db.query('SELECT r1.value AS x, r2.value AS y \
-                        FROM run_result_values r1, run_result_values r2 \
+                        FROM ( \
+                            SELECT r1.moment AS x, MAX(r2.moment) AS y \
+                                FROM (SELECT * FROM run_result_values \
+                                        WHERE run_id = $1 AND instance_id = $2 AND name = $3) AS r1, \
+                                    (SELECT * FROM run_result_values \
+                                        WHERE run_id = $1 AND instance_id = $2 AND name = $4) AS r2 \
+                                WHERE \
+                                    r1.moment >= r2.moment \
+                                GROUP BY r1.moment \
+                            ) AS m, \
+                            run_result_values r1, \
+                            run_result_values r2 \
                         WHERE \
-                            r1.run_id = $1 AND r1.instance_id = $2 AND \
-                            r2.run_id = $1 AND r2.instance_id = $2 AND \
-                            r1.name = $3 AND r2.name = $4 AND \
-                            r1.moment = r2.moment \
+                            r1.run_id = $1 AND r1.instance_id = $2 AND r1.name = $3 AND \
+                            r2.run_id = $1 AND r2.instance_id = $2 AND r2.name = $4 AND \
+                            r1.moment = m.x AND r2.moment = m.y \
                         ORDER BY r1.moment;',
                     [runId, instId, xName, yName], function (result) {
 
