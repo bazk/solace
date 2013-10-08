@@ -1,9 +1,12 @@
 <div class="experiments-container">
-    <a class="experiments-buttom" ng-repeat="exp in experiments" href="#/experiment/{{ exp.name }}">
-        <h4>{{ exp.name }}</h4>
-    </a>
-    <a class="experiments-buttom" href="#/experiments/new">
-        <h4>New Experiment</h4>
-        <span class="glyphicon glyphicon-plus"></span>
-    </a>
+    <div class="experiments-row">
+        <a class="experiments-buttom" ng-repeat="exp in experiments" href="#/experiment/{{ exp.name }}">
+            <span style="background-image: url('images/{{exp.name}}.png')"></span>
+            <h4>{{ exp.name }}</h4>
+        </a>
+        <a class="experiments-buttom new" href="#/experiments/new">
+            <span class="glyphicon glyphicon-plus"></span>
+            <h4>&nbsp;</h4>
+        </a>
+    </div>
 </div>
