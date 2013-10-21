@@ -32,9 +32,10 @@ angular.module('solace.viewer', []).
     service('$viewer', function ($rootScope, $viewerFile) {
         var $this = this;
 
-        $this.TYPE = {
-            CIRCLE: 0x00,
-            SQUARE: 0x01
+        $this.SHAPE = {
+            CIRCLE: 0xC0,
+            RECTANGLE: 0xC1,
+            POLYGON: 0xC2
         };
 
         $this.zoom = 250;
@@ -92,9 +93,9 @@ angular.module('solace.viewer', []).
             for (var i=0; i < Object.keys($viewerFile.objects).length; i++) {
                 var obj = $viewerFile.objects[i];
 
-                switch (obj.type) {
-                    case $this.TYPE.CIRCLE:
-                        var pos = $this.posToScreen(obj.pos),
+                switch (obj.$shape) {
+                    case $this.SHAPE.CIRCLE:
+                        var pos = $this.posToScreen({x: obj.x, y: obj.y}),
                             radius = obj.radius * $this.zoom;
 
                         $this.ctx.beginPath();
@@ -102,15 +103,15 @@ angular.module('solace.viewer', []).
                         $this.ctx.stroke();
 
                         $this.ctx.fillStyle = "#000000";
-                        if (obj.opt1 != null)
-                            $this.ctx.fillText(obj.opt1.toFixed(2), pos.x+radius+5, pos.y+radius+5);
-                        if (obj.opt2 != null)
-                            $this.ctx.fillText(obj.opt2.toFixed(2), pos.x+radius+5, pos.y+radius+20);
+                        if (obj.fitness != null)
+                            $this.ctx.fillText(obj.fitness.toFixed(2), pos.x+radius+5, pos.y+radius+5);
+                        if (obj.energy != null)
+                            $this.ctx.fillText(obj.energy.toFixed(2), pos.x+radius+5, pos.y+radius+20);
 
                         break;
 
-                    case $this.TYPE.SQUARE:
-                        var pos = $this.posToScreen(obj.pos),
+                    case $this.SHAPE.RECTANGLE:
+                        var pos = $this.posToScreen({x: obj.x, y: obj.y}),
                             width = obj.width * $this.zoom,
                             height = obj.height * $this.zoom;
 
@@ -211,7 +212,7 @@ angular.module('solace.viewer', []).
     service('$viewerFile', function () {
         var $this = this;
 
-        $this.OP = {
+        $this.OP_V1 = {
             TYPE: 0x00,
             POS: 0x01,
             RADIUS: 0x02,
@@ -219,6 +220,26 @@ angular.module('solace.viewer', []).
             SIZE: 0x04,
             OPT1: 0x05,
             OPT2: 0x06
+        };
+
+        $this.TYPE_V1 = {
+            CIRCLE: 0x00,
+            SQUARE: 0x01
+        };
+
+        $this.OP = {
+            CREATE_OBJ: 0xE0,
+            CREATE_PROP: 0xE1,
+            SET_UINT: 0xD0,
+            SET_INT: 0xD1,
+            SET_FLOAT: 0xD2,
+            SET_STRING: 0xD3
+        };
+
+        $this.SHAPE = {
+            CIRCLE: 0xC0,
+            RECTANGLE: 0xC1,
+            POLYGON: 0xC2
         };
 
         $this.loaded = false;
@@ -245,7 +266,15 @@ angular.module('solace.viewer', []).
             $this.version = $this.readByte(false);
             $this.stepRate = $this.readByte(false);
 
-            if (($this.version < 1) || ($this.version > 2))
+            if ($this.version == 3) {
+                $this.headerParser = $this.headerParserVersion3;
+                $this.parser = $this.parserVersion3;
+            }
+            else if (($this.version >= 1) && ($this.version <= 2)) {
+                $this.headerParser = null;
+                $this.parser = $this.parserVersion1;
+            }
+            else
                 throw "Error! File version not supported.";
 
             $this.lastStep = null;
@@ -261,7 +290,7 @@ angular.module('solace.viewer', []).
 
                         if (b != 0xFF) {
                             $this.offset += 4;
-                            $this.lastStep = $this.readInt();
+                            $this.lastStep = $this.readUint();
                             break;
                         }
                     }
@@ -276,16 +305,19 @@ angular.module('solace.viewer', []).
             $this.milisecondsLength = Math.ceil(($this.stepLength * 1000) / $this.stepRate);
             $this.secondsLength = Math.ceil($this.stepLength / $this.stepRate);
 
+            if ($this.headerParser)
+                $this.headerParser();
+
             if (!$this.seekToKeystep())
                 throw "Error! No keysteps found on the file.";
 
-            $this.currentStep = $this.readInt();
+            $this.currentStep = $this.readUint();
             $this.firstStep = $this.currentStep;
 
             if ($this.firstStep != 0)
                 console.warn('Warning! First step # is not zero.');
 
-            $this.readOperations();
+            $this.parser();
             $this.loaded = true;
         };
 
@@ -294,8 +326,8 @@ angular.module('solace.viewer', []).
                 return;
 
             $this.seekToStep();
-            $this.currentStep = $this.readInt()
-            $this.readOperations();
+            $this.currentStep = $this.readUint()
+            $this.parser();
         };
 
         $this.hasBytes = function () {
@@ -320,7 +352,7 @@ angular.module('solace.viewer', []).
                 return $this.buffer.getUint8($this.offset++);
         };
 
-        $this.readInt = function (escape) {
+        $this.readUint = function (escape) {
             if (!$this.buffer)
                 throw "File not loaded!";
 
@@ -342,6 +374,30 @@ angular.module('solace.viewer', []).
             dv.setUint8(3, $this.readByte());
 
             return dv.getUint32(0);
+        };
+
+        $this.readInt = function (escape) {
+            if (!$this.buffer)
+                throw "File not loaded!";
+
+            if (typeof escape === 'undefined')
+                escape = true;
+
+            if (!escape) {
+                var r = $this.buffer.getInt32($this.offset);
+                $this.offset += 4;
+                return r;
+            }
+
+            var ab = new ArrayBuffer(4),
+                dv = new DataView(ab);
+
+            dv.setUint8(0, $this.readByte());
+            dv.setUint8(1, $this.readByte());
+            dv.setUint8(2, $this.readByte());
+            dv.setUint8(3, $this.readByte());
+
+            return dv.getInt32(0);
         };
 
         $this.readShort = function (escape) {
@@ -390,6 +446,29 @@ angular.module('solace.viewer', []).
             return dv.getFloat32(0);
         };
 
+        $this.readString = function (escape) {
+            if (!$this.buffer)
+                throw "File not loaded!";
+
+            if (typeof escape === 'undefined')
+                escape = true;
+
+            var r, str = '';
+
+            while ($this.offset < ($this.buffer.byteLength - 1)) {
+                r = $this.buffer.getUint8($this.offset++);
+                if (escape && (r == 0xFF))
+                    r = $this.buffer.getUint8($this.offset++);
+
+                if (r == 0x00)
+                    break;
+
+                str += String.fromCharCode(r);
+            }
+
+            return str;
+        };
+
         $this.seekToKeystep = function () {
             if (!$this.buffer)
                 throw "File not loaded!";
@@ -426,7 +505,7 @@ angular.module('solace.viewer', []).
             return false;
         };
 
-        $this.readOperations = function () {
+        $this.parserVersion1 = function () {
             if (!$this.buffer)
                 throw "File not loaded!";
 
@@ -440,40 +519,125 @@ angular.module('solace.viewer', []).
                 $this.offset++;
 
                 id = $this.readShort();
+
                 if (!$this.objects.hasOwnProperty(id)) {
-                    $this.objects[id] = {};
-                    $this.objects[id].opt1 = null;
-                    $this.objects[id].opt2 = null;
+                    $this.objects[id] = {
+                        $properties: {},
+                        $shape: 0x00,
+                        $name: 'object'+id.toString()
+                    };
                 }
 
                 switch (op) {
-                    case $this.OP.TYPE:
-                        $this.objects[id].type = $this.readByte();
+                    case $this.OP_V1.TYPE:
+                        var type = $this.readByte();
+
+                        if (type == $this.TYPE_V1.CIRCLE)
+                            $this.objects[id].$shape = $this.SHAPE.CIRCLE;
+                        else if (type == $this.TYPE_V1.SQUARE)
+                            $this.objects[id].$shape = $this.SHAPE.RECTANGLE;
+
                         break;
-                    case $this.OP.POS:
-                        $this.objects[id].pos = {x: $this.readFloat(), y: $this.readFloat()};
+                    case $this.OP_V1.POS:
+                        $this.objects[id].x = $this.readFloat();
+                        $this.objects[id].y = $this.readFloat();
                         break;
-                    case $this.OP.RADIUS:
+                    case $this.OP_V1.RADIUS:
                         $this.objects[id].radius = $this.readFloat();
                         break;
-                    case $this.OP.ORIENTATION:
+                    case $this.OP_V1.ORIENTATION:
                         $this.objects[id].sin = $this.readFloat();
                         $this.objects[id].cos = $this.readFloat();
                         break;
-                    case $this.OP.SIZE:
+                    case $this.OP_V1.SIZE:
                         $this.objects[id].width = $this.readFloat();
                         $this.objects[id].height = $this.readFloat();
                         break;
-                    case $this.OP.OPT1:
-                        $this.objects[id].opt1 = $this.readFloat();
+                    case $this.OP_V1.OPT1:
+                        $this.objects[id].fitness = $this.readFloat();
                         break;
-                    case $this.OP.OPT2:
-                        $this.objects[id].opt2 = $this.readFloat();
+                    case $this.OP_V1.OPT2:
+                        $this.objects[id].energy = $this.readFloat();
                         break;
 
                     default:
                         throw "Error! Invalid or corrupted file (invalid operation code '0x"+op.toString(16)+"')."
                 }
             }
+        };
+
+        $this.headerParserVersion3 = function () {
+            if (!$this.buffer)
+                throw "File not loaded!";
+
+            var op, id;
+
+            while ($this.offset < ($this.buffer.byteLength - 1)) {
+                op = $this.buffer.getUint8($this.offset);
+                if (op == 0xFF)
+                    break;
+
+                $this.offset++;
+
+                id = $this.readShort();
+
+                switch (op) {
+                    case $this.OP.CREATE_OBJ:
+                        $this.objects[id] = {
+                            $properties: {},
+                            $shape: $this.readByte(),
+                            $name: $this.readString()
+                        };
+                        break;
+                    case $this.OP.CREATE_PROP:
+                        $this.objects[id].$properties[$this.readShort()] = $this.readString();
+                        break;
+
+                    default:
+                        throw "Error! Invalid or corrupted file (invalid operation code '0x"+op.toString(16)+"')."
+                }
+            }
+        };
+
+        $this.parserVersion3 = function () {
+            if (!$this.buffer)
+                throw "File not loaded!";
+
+            var op, id, prop_id;
+
+            while ($this.offset < ($this.buffer.byteLength - 1)) {
+                op = $this.buffer.getUint8($this.offset);
+                if (op == 0xFF)
+                    break;
+
+                $this.offset++;
+
+                id = $this.readShort();
+                prop_id = $this.readShort();
+
+                switch (op) {
+                    case $this.OP.SET_UINT:
+                        $this.set_prop(id, prop_id, $this.readUint());
+                        break;
+                    case $this.OP.SET_INT:
+                        $this.set_prop(id, prop_id, $this.readInt());
+                        break;
+                    case $this.OP.SET_FLOAT:
+                        $this.set_prop(id, prop_id, $this.readFloat());
+                        break;
+                    case $this.OP.SET_STRING:
+                        $this.set_prop(id, prop_id, $this.readString());
+                        break;
+
+                    default:
+                        throw "Error! Invalid or corrupted file (invalid operation code '0x"+op.toString(16)+"')."
+                }
+            }
+
+            console.log($this.objects);
+        };
+
+        $this.set_prop = function (id, prop_id, value) {
+            $this.objects[id][$this.objects[id].$properties[prop_id]] = value;
         };
     });
