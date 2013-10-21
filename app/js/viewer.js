@@ -633,8 +633,6 @@ angular.module('solace.viewer', []).
                         throw "Error! Invalid or corrupted file (invalid operation code '0x"+op.toString(16)+"')."
                 }
             }
-
-            console.log($this.objects);
         };
 
         $this.set_prop = function (id, prop_id, value) {
