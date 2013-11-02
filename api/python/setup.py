@@ -28,7 +28,7 @@ except ImportError:
     from distutils.core import setup
 
 setup(name='solace-api-python',
-      version='0.2.1',
+      version='0.2.2',
       description='Python API for the Solace framework',
       license='GPLv3',
       author='Eduardo L. Buratti',

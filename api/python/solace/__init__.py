@@ -140,7 +140,7 @@ class Experiment(object):
     def __init__(self, api_url, experiment_name, cookies):
         self.api_url = api_url
         self.name = experiment_name
-        self.cookies = cookies
+        self.cookies = dict(cookies)
 
         r = requests.get(self.api_url, cookies=self.cookies, verify=False)
 
