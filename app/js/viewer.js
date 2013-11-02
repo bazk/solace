@@ -46,6 +46,7 @@ angular.module('solace.viewer', []).
         $this.playing = false;
         $this.canvas = null;
         $this.size = {width: null, height: null};
+        $this.selectedObject = null;
 
         $rootScope.$on("$stateChangeStart", function () {
             $this.playing = false;
@@ -68,6 +69,8 @@ angular.module('solace.viewer', []).
                 $this.zoom += 10 * deltaY;
                 $this.draw();
             });
+
+            $this.canvas.click($this.click);
 
             $this.draw();
         };
@@ -93,20 +96,23 @@ angular.module('solace.viewer', []).
             for (var i=0; i < Object.keys($viewerFile.objects).length; i++) {
                 var obj = $viewerFile.objects[i];
 
+                var selected = false;
+                if ($this.selectedObject == obj)
+                    selected = true;
+
                 switch (obj.$shape) {
                     case $this.SHAPE.CIRCLE:
                         var pos = $this.posToScreen({x: obj.x, y: obj.y}),
                             radius = obj.radius * $this.zoom;
 
+                        if (!selected)
+                            $this.ctx.strokeStyle = "#000000";
+                        else
+                            $this.ctx.strokeStyle = "#ff0000";
+
                         $this.ctx.beginPath();
                         $this.ctx.arc(pos.x,pos.y, radius, 0, 2*Math.PI, true);
                         $this.ctx.stroke();
-
-                        $this.ctx.fillStyle = "#000000";
-                        if (obj.fitness != null)
-                            $this.ctx.fillText(obj.fitness.toFixed(2), pos.x+radius+5, pos.y+radius+5);
-                        if (obj.energy != null)
-                            $this.ctx.fillText(obj.energy.toFixed(2), pos.x+radius+5, pos.y+radius+20);
 
                         break;
 
@@ -118,12 +124,61 @@ angular.module('solace.viewer', []).
                         pos.x -= width / 2;
                         pos.y -= height / 2;
 
+                        if (!selected)
+                            $this.ctx.strokeStyle = "#000000";
+                        else
+                            $this.ctx.strokeStyle = "#ff0000";
+
                         $this.ctx.beginPath();
                         $this.ctx.rect(pos.x,pos.y, width, height);
                         $this.ctx.stroke();
                         break;
                 }
             }
+
+            $this.drawInfo();
+        };
+
+        $this.drawInfo = function () {
+            var x = $this.size.width - 190 - 20,
+                y = 20;
+
+            $this.ctx.fillStyle = "#e7e7e7";
+            $this.ctx.fillRect(x, y, 190, 300);
+
+            $this.ctx.fillStyle = "#000000";
+            var obj = $this.selectedObject;
+            if (obj) {
+                $this.ctx.fillText("name = " + obj.$name, x+5, y+12);
+                y += 14;
+
+                for (var i=0; i < Object.keys(obj.$properties).length; i++) {
+                    $this.ctx.fillText(obj.$properties[i] + " = " + obj[obj.$properties[i]], x+5, y+12);
+                    y += 14;
+                }
+            }
+        };
+
+        $this.click = function (event) {
+            for (var i=0; i < Object.keys($viewerFile.objects).length; i++) {
+                var obj = $viewerFile.objects[i];
+
+                if (obj.$shape == $this.SHAPE.CIRCLE) {
+                    var pos = $this.posToScreen({x: obj.x, y: obj.y}),
+                        radius = obj.radius * $this.zoom;
+
+                    if ( Math.pow(event.offsetX - pos.x, 2) +
+                         Math.pow(event.offsetY - pos.y, 2) <=
+                         Math.pow(radius, 2) ) {
+
+                        $this.selectedObject = obj;
+                        $this.draw();
+                        return;
+                    }
+                }
+            }
+
+            $this.selectedObject = null;
         };
 
         $this.play = function() {
@@ -203,6 +258,7 @@ angular.module('solace.viewer', []).
             $this.clock = 0;
             $this.progress = 0;
             $this.length = $viewerFile.secondsLength;
+            $this.selectedObject = null;
             $this.draw();
 
             $rootScope.$broadcast('$viewerClockUpdate', $this.clock);
