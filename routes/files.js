@@ -34,7 +34,7 @@ exports.get = function(req, res) {
 
         var file = result.rows[0];
 
-        var expire = Math.round(new Date().getTime() / 1000) + 3600; // 1 hour
+        var expire = Math.round(new Date().getTime() / 1000) + 14400; // 4 hour
         var md5 = crypto.createHash('md5');
         md5.update(cfg.secret+expire.toString());
         var hash = md5.digest('base64').replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
