@@ -254,6 +254,16 @@ angular.module('solace.controllers', []).
                 return;
             }
 
+            for (var i=0; i<$scope.run.files.length; i++) {
+                var f = $scope.run.files[i];
+                var ext = /[^.]+$/.exec(f);
+
+                if (ext && (ext[0] === 'srs'))
+                    f.link = "#/viewer/{{ experiment.name }}/{{ file.id }}";
+                else
+                    f.link = "/f/{{ experiment.name }}/{{ file.id }}";
+            }
+
             $rootScope.$broadcast('$loadingSuccess');
         });
 
