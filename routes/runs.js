@@ -18,12 +18,13 @@ exports.get = function(req, res) {
 
         var run = result.rows[0];
 
-        req.db.query('SELECT f.id, f.exp_id, f.name, f.type, f.size, f.created_at \
+        req.db.query("SELECT f.id, f.exp_id, f.name, f.type, f.size, f.created_at \
                         FROM experiment_files f, run_files rf \
                         WHERE rf.instance_id = $1 \
                           AND rf.run_id = $2 \
                           AND rf.file_id = f.id \
-                        ORDER BY f.name ASC;',
+                          AND f.name NOT LIKE '%.png' \
+                        ORDER BY f.name ASC;",
                     [instId,runId], function(result) {
 
             run.files = result.rows;
