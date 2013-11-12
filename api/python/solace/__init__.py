@@ -159,11 +159,16 @@ class Experiment(object):
     def __repr__(self):
         return 'Experiment<%s, %s> (%s)' % (self.name, str(self.created_at), self.description)
 
-    def create_instance(self, num_runs, parameters):
+    def create_instance(self, num_runs, parameters, code_version=None):
+        data = {
+            'num_runs': num_runs,
+            'parameters': parse_params(parameters)
+        }
+        if code_version:
+            data['code_version'] = code_version
+
         r = requests.post(self.api_url,
-                          data={
-                            'num_runs': num_runs,
-                            'parameters': parse_params(parameters)},
+                          data=data,
                           cookies=self.cookies,
                           verify=False)
 
