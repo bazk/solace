@@ -96,7 +96,7 @@ CREATE TABLE instances (
     exp_id          INTEGER NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
     started_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     finished_at     TIMESTAMP WITH TIME ZONE,
-    repository_ref  TEXT,
+    code_version    TEXT,
     comment         TEXT,
     PRIMARY KEY (id)
 );

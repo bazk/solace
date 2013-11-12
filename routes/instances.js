@@ -1,12 +1,13 @@
 exports.create = function(req, res) {
     var expName = req.params.expName,
         numRuns = parseInt(req.body.num_runs),
-        parameters = JSON.parse(req.body.parameters);
+        parameters = JSON.parse(req.body.parameters),
+        code_version = req.body.code_version || null;
 
     req.db.transaction(function (commit, rollback) {
-        req.db.query('INSERT INTO instances (exp_id) \
-                        (SELECT id AS exp_id FROM experiments WHERE name = $1) \
-                        RETURNING id;', [expName], function(result) {
+        req.db.query('INSERT INTO instances (exp_id, code_version) \
+                        (SELECT id, $2 FROM experiments WHERE name = $1) \
+                        RETURNING id;', [expName, code_version], function(result) {
 
             var instId = result.rows[0].id;
 
@@ -44,7 +45,7 @@ exports.get = function(req, res) {
     var expName = req.params.expName,
         instId = req.params.instId;
 
-    req.db.query('SELECT i.id, i.exp_id, i.started_at, i.finished_at, i.repository_ref, i.comment \
+    req.db.query('SELECT i.id, i.exp_id, i.started_at, i.finished_at, i.code_version, i.comment \
                     FROM experiments e, instances i \
                     WHERE e.name = $1 AND i.id = $2 AND e.id = i.exp_id;',
                 [expName, instId], function(result) {

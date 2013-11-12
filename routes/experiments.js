@@ -45,7 +45,7 @@ exports.get = function(req, res) {
         var experiment = result.rows[0];
 
         req.db.query('SELECT \
-              i.id, i.started_at, i.finished_at, i.repository_ref, \
+              i.id, i.started_at, i.finished_at, i.code_version, \
               i.comment, avg(r.progress) AS progress \
           FROM instances i, runs r \
           WHERE r.instance_id = i.id AND i.exp_id = $1 \
