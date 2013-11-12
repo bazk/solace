@@ -256,12 +256,12 @@ angular.module('solace.controllers', []).
 
             for (var i=0; i<$scope.run.files.length; i++) {
                 var f = $scope.run.files[i];
-                var ext = /[^.]+$/.exec(f);
+                var ext = /[^.]+$/.exec(f.name);
 
                 if (ext && (ext[0] === 'srs'))
-                    f.link = "#/viewer/{{ experiment.name }}/{{ file.id }}";
+                    f.link = "#/viewer/"+$state.params.expName+"/"+f.id;
                 else
-                    f.link = "/f/{{ experiment.name }}/{{ file.id }}";
+                    f.link = "/api/f/"+$state.params.expName+"/"+f.id;
             }
 
             $rootScope.$broadcast('$loadingSuccess');
