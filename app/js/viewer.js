@@ -38,6 +38,17 @@ angular.module('solace.viewer', []).
             POLYGON: 0xC2
         };
 
+        $this.PROXIMITY_ANGLES = [
+            4.71238898038469000,
+            5.49778714378213800,
+            6.10865238198015350,
+            0.17453292519943295,
+            0.78539816339744830,
+            1.57079632679489660,
+            2.61799387799149440,
+            3.66519142918809230
+        ];
+
         $this.zoom = 250;
         $this.speed = 1.0;
         $this.clock = 0;
@@ -103,16 +114,86 @@ angular.module('solace.viewer', []).
                 switch (obj.$shape) {
                     case $this.SHAPE.CIRCLE:
                         var pos = $this.posToScreen({x: obj.x, y: obj.y}),
-                            radius = obj.radius * $this.zoom;
+                            radius = obj.radius * $this.zoom,
+                            angle = Math.atan2(-obj.sin, obj.cos);
+
+                        if (angle < 0)
+                            angle += 2*Math.PI;
 
                         if (!selected)
                             $this.ctx.strokeStyle = "#000000";
                         else
                             $this.ctx.strokeStyle = "#ff0000";
+                        $this.ctx.lineWidth = 1;
 
                         $this.ctx.beginPath();
-                        $this.ctx.arc(pos.x,pos.y, radius, 0, 2*Math.PI, true);
+                        $this.ctx.arc(pos.x, pos.y, radius, 0, 2*Math.PI);
                         $this.ctx.stroke();
+
+                        if (obj.$name.substring(0,5) === 'robot') {
+                            $this.ctx.beginPath();
+                            $this.ctx.moveTo(pos.x, pos.y);
+                            $this.ctx.lineTo(pos.x + (obj.cos * radius), pos.y - (obj.sin * radius));
+                            $this.ctx.stroke();
+
+                            if (typeof obj.sensors !== 'undefined') {
+                                $this.ctx.strokeStyle = "rgba(255,0,255,0.8)";
+                                $this.ctx.lineWidth = 2;
+
+                                // IR
+                                for (var j=0; j<8; j++) {
+                                    if ((obj.sensors & Math.pow(2, j)) != 0) {
+                                        var s = angle + $this.PROXIMITY_ANGLES[j];
+                                        $this.ctx.beginPath();
+                                        $this.ctx.arc(pos.x, pos.y, radius-(0.01*$this.zoom), s-(Math.PI/16), s+(Math.PI/16));
+                                        $this.ctx.stroke();
+                                    }
+                                }
+
+                                // camera
+                                if ( ((obj.sensors & 256) != 0) || ((obj.sensors & 1024) != 0) ) {
+                                    $this.ctx.fillStyle = "rgba(0,255,0,0.05)";
+                                    $this.ctx.beginPath();
+                                    $this.ctx.moveTo(pos.x, pos.y);
+                                    $this.ctx.arc(pos.x, pos.y, radius+(0.385*$this.zoom), angle, angle + 1.2566370614359172);
+                                    $this.ctx.fill();
+                                }
+
+                                if ( ((obj.sensors & 512) != 0) || ((obj.sensors & 2048) != 0) ) {
+                                    $this.ctx.fillStyle = "rgba(0,255,0,0.05)";
+                                    $this.ctx.beginPath();
+                                    $this.ctx.moveTo(pos.x, pos.y);
+                                    $this.ctx.arc(pos.x, pos.y, radius+(0.385*$this.zoom), angle - 1.2566370614359172, angle);
+                                    $this.ctx.fill();
+                                }
+                            }
+
+                            if (typeof obj.front_led !== 'undefined') {
+                                $this.ctx.strokeStyle = "#0000ff";
+                                $this.ctx.strokeStyle = "rgba(0,0,255,0.3)";
+                                $this.ctx.lineWidth = 3;
+
+                                if (obj.front_led > 0.5) {
+                                    var s = angle - (Math.PI / 2);
+                                    $this.ctx.beginPath();
+                                    $this.ctx.arc(pos.x, pos.y, radius+(0.01*$this.zoom), s, (s+Math.PI));
+                                    $this.ctx.stroke();
+                                }
+                            }
+
+                            if (typeof obj.rear_led !== 'undefined') {
+                                $this.ctx.strokeStyle = "#ff0000";
+                                $this.ctx.strokeStyle = "rgba(255,0,0,0.3)";
+                                $this.ctx.lineWidth = 3;
+
+                                if (obj.rear_led > 0.5) {
+                                    var s = Math.PI + angle - (Math.PI / 2);
+                                    $this.ctx.beginPath();
+                                    $this.ctx.arc(pos.x, pos.y, radius+(0.01*$this.zoom), s, (s+Math.PI));
+                                    $this.ctx.stroke();
+                                }
+                            }
+                        }
 
                         break;
 
@@ -128,6 +209,7 @@ angular.module('solace.viewer', []).
                             $this.ctx.strokeStyle = "#000000";
                         else
                             $this.ctx.strokeStyle = "#ff0000";
+                        $this.ctx.lineWidth = 1;
 
                         $this.ctx.beginPath();
                         $this.ctx.rect(pos.x,pos.y, width, height);
@@ -162,6 +244,9 @@ angular.module('solace.viewer', []).
         $this.click = function (event) {
             for (var i=0; i < Object.keys($viewerFile.objects).length; i++) {
                 var obj = $viewerFile.objects[i];
+
+                if (obj.$name.substring(0,5) !== 'robot')
+                    continue;
 
                 if (obj.$shape == $this.SHAPE.CIRCLE) {
                     var pos = $this.posToScreen({x: obj.x, y: obj.y}),
