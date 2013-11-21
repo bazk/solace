@@ -207,6 +207,14 @@ angular.module('solace.viewer', []).
                             }
                         }
 
+                        else if (obj.$name.substring(0,6) === 'target') {
+                            $this.ctx.fillStyle = "rgba(255,0,0,0.3)";
+                            $this.ctx.beginPath();
+                            $this.ctx.moveTo(pos.x, pos.y);
+                            $this.ctx.arc(pos.x, pos.y, 0.01*$this.zoom, 0, 2*Math.PI);
+                            $this.ctx.fill();
+                        }
+
                         break;
 
                     case $this.SHAPE.RECTANGLE:
