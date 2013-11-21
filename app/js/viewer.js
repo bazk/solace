@@ -152,7 +152,13 @@ angular.module('solace.viewer', []).
 
                                 // camera
                                 if ( ((obj.sensors & 256) != 0) || ((obj.sensors & 1024) != 0) ) {
-                                    $this.ctx.fillStyle = "rgba(0,255,0,0.05)";
+                                    if ( ((obj.sensors & 256) != 0) && ((obj.sensors & 1024) != 0) )
+                                        $this.ctx.fillStyle = "rgba(255,0,255,0.1)";
+                                    else if ((obj.sensors & 256) != 0)
+                                        $this.ctx.fillStyle = "rgba(0,0,255,0.1)";
+                                    else if ((obj.sensors & 1024) != 0)
+                                        $this.ctx.fillStyle = "rgba(255,0,0,0.1)";
+
                                     $this.ctx.beginPath();
                                     $this.ctx.moveTo(pos.x, pos.y);
                                     $this.ctx.arc(pos.x, pos.y, radius+(0.385*$this.zoom), angle, angle + 1.2566370614359172);
@@ -160,7 +166,13 @@ angular.module('solace.viewer', []).
                                 }
 
                                 if ( ((obj.sensors & 512) != 0) || ((obj.sensors & 2048) != 0) ) {
-                                    $this.ctx.fillStyle = "rgba(0,255,0,0.05)";
+                                    if ( ((obj.sensors & 512) != 0) && ((obj.sensors & 2048) != 0) )
+                                        $this.ctx.fillStyle = "rgba(255,0,255,0.1)";
+                                    else if ((obj.sensors & 512) != 0)
+                                        $this.ctx.fillStyle = "rgba(0,0,255,0.1)";
+                                    else if ((obj.sensors & 2048) != 0)
+                                        $this.ctx.fillStyle = "rgba(255,0,0,0.1)";
+
                                     $this.ctx.beginPath();
                                     $this.ctx.moveTo(pos.x, pos.y);
                                     $this.ctx.arc(pos.x, pos.y, radius+(0.385*$this.zoom), angle - 1.2566370614359172, angle);
