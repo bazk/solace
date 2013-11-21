@@ -81,8 +81,8 @@ angular.module('solace.viewer', []).
             $this.ctx = $this.canvas.get(0).getContext("2d");
 
             $this.canvas.attr("tabindex", "0")
-            $this.canvas.attr("contentEditable", "true")
-            $this.canvas[0].contentEditable = true;
+            //$this.canvas.attr("contentEditable", "true")
+            //$this.canvas[0].contentEditable = true;
 
             $this.canvas.mousewheel(function (event, delta, deltaX, deltaY) {
                 $this.zoom += 10 * deltaY;
@@ -284,6 +284,14 @@ angular.module('solace.viewer', []).
         };
 
         $this.click = function (event) {
+            var x = event.offsetX || event.layerX,
+                y = event.offsetY || event.layerY;
+
+            if (!x)
+                x = event.clientX - $(event.target).offset().left;
+            if (!y)
+                y = event.clientY - $(event.target).offset().top;
+
             if (!$viewerFile.loaded)
                 return;
 
@@ -296,9 +304,8 @@ angular.module('solace.viewer', []).
                 if (obj.$shape == $this.SHAPE.CIRCLE) {
                     var pos = $this.posToScreen({x: obj.x, y: obj.y}),
                         radius = obj.radius * $this.zoom;
-
-                    if ( Math.pow(event.offsetX - pos.x, 2) +
-                         Math.pow(event.offsetY - pos.y, 2) <=
+                    if ( Math.pow(x - pos.x, 2) +
+                         Math.pow(y - pos.y, 2) <=
                          Math.pow(radius, 2) ) {
 
                         $this.selectedObject = obj;
@@ -309,6 +316,7 @@ angular.module('solace.viewer', []).
             }
 
             $this.selectedObject = null;
+            $this.draw();
         };
 
         $this.keydown = function (event) {
