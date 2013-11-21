@@ -198,12 +198,12 @@ angular.module('solace.viewer', []).
 
                             if ($this.showLEDs)
                             {
-                                if (typeof obj.front_led !== 'undefined') {
+                                if (typeof obj.actuators2 !== 'undefined') {
                                     $this.ctx.strokeStyle = "#0000ff";
                                     $this.ctx.strokeStyle = "rgba(0,0,255,0.3)";
                                     $this.ctx.lineWidth = 3;
 
-                                    if (obj.front_led > 0.5) {
+                                    if (obj.actuators2 > 0.5) {
                                         var s = angle - (Math.PI / 2);
                                         $this.ctx.beginPath();
                                         $this.ctx.arc(pos.x, pos.y, radius+(0.01*$this.zoom), s, (s+Math.PI));
@@ -211,12 +211,12 @@ angular.module('solace.viewer', []).
                                     }
                                 }
 
-                                if (typeof obj.rear_led !== 'undefined') {
+                                if (typeof obj.actuators3 !== 'undefined') {
                                     $this.ctx.strokeStyle = "#ff0000";
                                     $this.ctx.strokeStyle = "rgba(255,0,0,0.3)";
                                     $this.ctx.lineWidth = 3;
 
-                                    if (obj.rear_led > 0.5) {
+                                    if (obj.actuators3 > 0.5) {
                                         var s = Math.PI + angle - (Math.PI / 2);
                                         $this.ctx.beginPath();
                                         $this.ctx.arc(pos.x, pos.y, radius+(0.01*$this.zoom), s, (s+Math.PI));
