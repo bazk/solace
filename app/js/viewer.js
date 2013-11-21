@@ -59,6 +59,10 @@ angular.module('solace.viewer', []).
         $this.size = {width: null, height: null};
         $this.selectedObject = null;
 
+        $this.showCamera = false;
+        $this.showProximity = false;
+        $this.showLEDs = true;
+
         $rootScope.$on("$stateChangeStart", function () {
             $this.playing = false;
         });
@@ -76,12 +80,18 @@ angular.module('solace.viewer', []).
             $this.size.height = element.height();
             $this.ctx = $this.canvas.get(0).getContext("2d");
 
+            $this.canvas.attr("tabindex", "0")
+            $this.canvas.attr("contentEditable", "true")
+            $this.canvas[0].contentEditable = true;
+
             $this.canvas.mousewheel(function (event, delta, deltaX, deltaY) {
                 $this.zoom += 10 * deltaY;
                 $this.draw();
             });
 
             $this.canvas.click($this.click);
+
+            $this.canvas.keydown($this.keydown);
 
             $this.draw();
         };
@@ -141,78 +151,90 @@ angular.module('solace.viewer', []).
                                 $this.ctx.lineWidth = 2;
 
                                 // IR
-                                for (var j=0; j<8; j++) {
-                                    if ((obj.sensors & Math.pow(2, j)) != 0) {
-                                        var s = angle + $this.PROXIMITY_ANGLES[j];
-                                        $this.ctx.beginPath();
-                                        $this.ctx.arc(pos.x, pos.y, radius-(0.01*$this.zoom), s-(Math.PI/16), s+(Math.PI/16));
-                                        $this.ctx.stroke();
+                                if ($this.showProximity)
+                                {
+                                    for (var j=0; j<8; j++) {
+                                        if ((obj.sensors & Math.pow(2, j)) != 0) {
+                                            var s = angle + $this.PROXIMITY_ANGLES[j];
+                                            $this.ctx.beginPath();
+                                            $this.ctx.arc(pos.x, pos.y, radius-(0.01*$this.zoom), s-(Math.PI/16), s+(Math.PI/16));
+                                            $this.ctx.stroke();
+                                        }
                                     }
                                 }
 
                                 // camera
-                                if ( ((obj.sensors & 256) != 0) || ((obj.sensors & 1024) != 0) ) {
-                                    if ( ((obj.sensors & 256) != 0) && ((obj.sensors & 1024) != 0) )
-                                        $this.ctx.fillStyle = "rgba(255,0,255,0.1)";
-                                    else if ((obj.sensors & 256) != 0)
-                                        $this.ctx.fillStyle = "rgba(0,0,255,0.1)";
-                                    else if ((obj.sensors & 1024) != 0)
-                                        $this.ctx.fillStyle = "rgba(255,0,0,0.1)";
+                                if ($this.showCamera)
+                                {
+                                    if ( ((obj.sensors & 256) != 0) || ((obj.sensors & 1024) != 0) ) {
+                                        if ( ((obj.sensors & 256) != 0) && ((obj.sensors & 1024) != 0) )
+                                            $this.ctx.fillStyle = "rgba(255,0,255,0.1)";
+                                        else if ((obj.sensors & 256) != 0)
+                                            $this.ctx.fillStyle = "rgba(0,0,255,0.1)";
+                                        else if ((obj.sensors & 1024) != 0)
+                                            $this.ctx.fillStyle = "rgba(255,0,0,0.1)";
 
-                                    $this.ctx.beginPath();
-                                    $this.ctx.moveTo(pos.x, pos.y);
-                                    $this.ctx.arc(pos.x, pos.y, radius+(0.385*$this.zoom), angle, angle + 1.2566370614359172);
-                                    $this.ctx.fill();
-                                }
+                                        $this.ctx.beginPath();
+                                        $this.ctx.moveTo(pos.x, pos.y);
+                                        $this.ctx.arc(pos.x, pos.y, radius+(0.385*$this.zoom), angle, angle + 1.2566370614359172);
+                                        $this.ctx.fill();
+                                    }
 
-                                if ( ((obj.sensors & 512) != 0) || ((obj.sensors & 2048) != 0) ) {
-                                    if ( ((obj.sensors & 512) != 0) && ((obj.sensors & 2048) != 0) )
-                                        $this.ctx.fillStyle = "rgba(255,0,255,0.1)";
-                                    else if ((obj.sensors & 512) != 0)
-                                        $this.ctx.fillStyle = "rgba(0,0,255,0.1)";
-                                    else if ((obj.sensors & 2048) != 0)
-                                        $this.ctx.fillStyle = "rgba(255,0,0,0.1)";
+                                    if ( ((obj.sensors & 512) != 0) || ((obj.sensors & 2048) != 0) ) {
+                                        if ( ((obj.sensors & 512) != 0) && ((obj.sensors & 2048) != 0) )
+                                            $this.ctx.fillStyle = "rgba(255,0,255,0.1)";
+                                        else if ((obj.sensors & 512) != 0)
+                                            $this.ctx.fillStyle = "rgba(0,0,255,0.1)";
+                                        else if ((obj.sensors & 2048) != 0)
+                                            $this.ctx.fillStyle = "rgba(255,0,0,0.1)";
 
-                                    $this.ctx.beginPath();
-                                    $this.ctx.moveTo(pos.x, pos.y);
-                                    $this.ctx.arc(pos.x, pos.y, radius+(0.385*$this.zoom), angle - 1.2566370614359172, angle);
-                                    $this.ctx.fill();
-                                }
-                            }
-
-                            if (typeof obj.front_led !== 'undefined') {
-                                $this.ctx.strokeStyle = "#0000ff";
-                                $this.ctx.strokeStyle = "rgba(0,0,255,0.3)";
-                                $this.ctx.lineWidth = 3;
-
-                                if (obj.front_led > 0.5) {
-                                    var s = angle - (Math.PI / 2);
-                                    $this.ctx.beginPath();
-                                    $this.ctx.arc(pos.x, pos.y, radius+(0.01*$this.zoom), s, (s+Math.PI));
-                                    $this.ctx.stroke();
+                                        $this.ctx.beginPath();
+                                        $this.ctx.moveTo(pos.x, pos.y);
+                                        $this.ctx.arc(pos.x, pos.y, radius+(0.385*$this.zoom), angle - 1.2566370614359172, angle);
+                                        $this.ctx.fill();
+                                    }
                                 }
                             }
 
-                            if (typeof obj.rear_led !== 'undefined') {
-                                $this.ctx.strokeStyle = "#ff0000";
-                                $this.ctx.strokeStyle = "rgba(255,0,0,0.3)";
-                                $this.ctx.lineWidth = 3;
+                            if ($this.showLEDs)
+                            {
+                                if (typeof obj.front_led !== 'undefined') {
+                                    $this.ctx.strokeStyle = "#0000ff";
+                                    $this.ctx.strokeStyle = "rgba(0,0,255,0.3)";
+                                    $this.ctx.lineWidth = 3;
 
-                                if (obj.rear_led > 0.5) {
-                                    var s = Math.PI + angle - (Math.PI / 2);
-                                    $this.ctx.beginPath();
-                                    $this.ctx.arc(pos.x, pos.y, radius+(0.01*$this.zoom), s, (s+Math.PI));
-                                    $this.ctx.stroke();
+                                    if (obj.front_led > 0.5) {
+                                        var s = angle - (Math.PI / 2);
+                                        $this.ctx.beginPath();
+                                        $this.ctx.arc(pos.x, pos.y, radius+(0.01*$this.zoom), s, (s+Math.PI));
+                                        $this.ctx.stroke();
+                                    }
+                                }
+
+                                if (typeof obj.rear_led !== 'undefined') {
+                                    $this.ctx.strokeStyle = "#ff0000";
+                                    $this.ctx.strokeStyle = "rgba(255,0,0,0.3)";
+                                    $this.ctx.lineWidth = 3;
+
+                                    if (obj.rear_led > 0.5) {
+                                        var s = Math.PI + angle - (Math.PI / 2);
+                                        $this.ctx.beginPath();
+                                        $this.ctx.arc(pos.x, pos.y, radius+(0.01*$this.zoom), s, (s+Math.PI));
+                                        $this.ctx.stroke();
+                                    }
                                 }
                             }
                         }
 
                         else if (obj.$name.substring(0,6) === 'target') {
-                            $this.ctx.fillStyle = "rgba(255,0,0,0.3)";
-                            $this.ctx.beginPath();
-                            $this.ctx.moveTo(pos.x, pos.y);
-                            $this.ctx.arc(pos.x, pos.y, 0.01*$this.zoom, 0, 2*Math.PI);
-                            $this.ctx.fill();
+                            if ($this.showLEDs)
+                            {
+                                $this.ctx.fillStyle = "rgba(255,0,0,0.3)";
+                                $this.ctx.beginPath();
+                                $this.ctx.moveTo(pos.x, pos.y);
+                                $this.ctx.arc(pos.x, pos.y, 0.01*$this.zoom, 0, 2*Math.PI);
+                                $this.ctx.fill();
+                            }
                         }
 
                         break;
@@ -262,6 +284,9 @@ angular.module('solace.viewer', []).
         };
 
         $this.click = function (event) {
+            if (!$viewerFile.loaded)
+                return;
+
             for (var i=0; i < Object.keys($viewerFile.objects).length; i++) {
                 var obj = $viewerFile.objects[i];
 
@@ -284,6 +309,22 @@ angular.module('solace.viewer', []).
             }
 
             $this.selectedObject = null;
+        };
+
+        $this.keydown = function (event) {
+            switch (event.keyCode) {
+            case 67:
+                $this.showCamera = !$this.showCamera;
+                break;
+
+            case 80:
+                $this.showProximity = !$this.showProximity;
+                break;
+
+            case 76:
+                $this.showLEDs = !$this.showLEDs;
+                break;
+            };
         };
 
         $this.play = function() {
