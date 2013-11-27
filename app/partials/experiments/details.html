@@ -3,8 +3,8 @@
 
 <div class="instances">
 
-    <div ng-repeat="instance in experiment.instances" class="instances-item" ng-class="instance.active" ng-click="go('/experiment/{{experiment.name}}/{{instance.id}}')">
-        <a href="#/experiment/{{experiment.name}}/{{instance.id}}">
+    <div ng-repeat="instance in experiment.instances" class="instances-item" ng-class="instance.active" ng-click="go('/experiments/{{experiment.name}}/{{instance.id}}/dashboard')">
+        <a href="#/experiments/{{experiment.name}}/{{instance.id}}/dashboard">
             <strong>{{ instance.id | limitTo:8 }}</strong> {{instance.comment}}
         </a>
 

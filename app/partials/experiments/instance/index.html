@@ -1,0 +1,10 @@
+<div class="tabs">
+    <!--<button type="button" class="btn btn-default" ng-click="goBack()"><span class="glyphicon glyphicon-chevron-left"></span></button>-->
+    <ul>
+        <li ng-repeat="tab in tabs" ng-class="{active: tab.active}"><a href="{{ tab.href }}">{{ tab.title }}</a></li>
+    </ul>
+</div>
+
+<div class="tab-content">
+    <div class="tab-pane" ui-view></div>
+</div>

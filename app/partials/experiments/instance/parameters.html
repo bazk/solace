@@ -1,0 +1,34 @@
+<table class="table">
+    <thead>
+        <tr>
+            <th style="min-width: 240px; width: 240px;">Key</th>
+            <th style="min-width: 240px;">Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><em>ID</em></td>
+            <td>{{instance.id}}</td>
+        </tr>
+        <tr>
+            <td><em>Comment</em></td>
+            <td>{{instance.comment}}</td>
+        </tr>
+        <tr>
+            <td><em>Started at</em></td>
+            <td>{{instance.runs[0].started_at | date:'dd/MM/yyyy HH:mm:ss'}}</td>
+        </tr>
+        <tr>
+            <td><em>Finished at</em></td>
+            <td>{{instance.runs[0].finished_at | date:'dd/MM/yyyy HH:mm:ss'}}</td>
+        </tr>
+        <tr>
+            <td><em>Revision</em></td>
+            <td>{{instance.code_version}}</td>
+        </tr>
+        <tr ng-repeat="param in instance.parameters">
+            <td><em>{{param.name}}</em></td>
+            <td>{{param.value}}</td>
+        </tr>
+    </tbody>
+</table>

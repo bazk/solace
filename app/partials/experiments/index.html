@@ -1,6 +1,8 @@
+<div ui-view></div>
+
 <div class="experiments-container">
     <div class="experiments-row">
-        <a class="experiments-buttom" ng-repeat="exp in experiments" href="#/experiment/{{ exp.name }}">
+        <a class="experiments-buttom" ng-repeat="exp in experiments" href="#/experiments/{{ exp.name }}">
             <span style="background-image: url('images/{{exp.name}}.png')"></span>
             <h4>{{ exp.name }}</h4>
         </a>

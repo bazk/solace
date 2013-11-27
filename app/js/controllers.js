@@ -20,7 +20,7 @@ angular.module('solace.controllers', []).
                 $location.path('/login');
             }
             else if ($location.path() === '/login') {
-                $location.path('/experiment');
+                $location.path('/experiments');
             }
             else if ($scope.return_path) {
                 $location.path($scope.return_path);
@@ -67,7 +67,7 @@ angular.module('solace.controllers', []).
 
     controller('NavBarCtrl', function ($scope, $rootScope, $state, $location, UserFactory) {
         $scope.menuitems = [
-            {title: "Experiments", link: "#/experiment", section: "experiment", active: "", icon: "glyphicon glyphicon-tasks"},
+            {title: "Experiments", link: "#/experiments", section: "experiments", active: "", icon: "glyphicon glyphicon-tasks"},
             {title: "Viewer", link: "#/viewer", section: "viewer", active: "", icon: "glyphicon glyphicon-stats"},
         ];
 
@@ -227,7 +227,7 @@ angular.module('solace.controllers', []).
         });
     }).
 
-    controller('InstanceCtrl', function ($scope, $rootScope, $state, InstanceFactory) {
+    controller('InstanceCtrl', function ($scope, $rootScope, $state, $timeout, InstanceFactory, RunFactory, ChartFactory, ChartDataFactory) {
         $rootScope.$broadcast('$loadingStart');
 
         $scope.instance = InstanceFactory.get({expName: $state.params.expName, instId: $state.params.instId}, function (res) {
@@ -238,36 +238,31 @@ angular.module('solace.controllers', []).
 
             $rootScope.$broadcast('$loadingSuccess');
         });
+
+        var base = '#/experiments/'+$state.params.expName+'/'+$state.params.instId;
+
+        $scope.tabs = [
+            {name: 'dashboard', title: 'Dashboard', href: base+'/dashboard'},
+            {name: 'parameters', title: 'Parameters', href: base+'/parameters'},
+            {name: 'files', title: 'Files', href: base+'/files'}
+        ];
+
+        $scope.$on("$stateChangeSuccess", function(event, current, previous) {
+            angular.forEach($scope.tabs, function (tab) {
+                tab.active = (tab.name === $state.current.tab);
+            });
+        });
     }).
 
-    controller('RunCtrl', function ($scope, $rootScope, $state, $timeout, RunFactory, ChartFactory, ChartDataFactory) {
+    controller('DashboardCtrl', function ($scope, $rootScope, $state, $timeout, ChartFactory, ChartDataFactory) {
         $rootScope.$broadcast('$loadingStart');
 
-        $scope.sort = {
-            column: 'name',
-            reverse: false
-        };
-
-        $scope.run = RunFactory.get({expName: $state.params.expName, instId: $state.params.instId, runId: $state.params.runId}, function (res) {
-            if (res.error) {
-                $rootScope.$broadcast('$loadingError', res.error);
+        ChartFactory.get({expName: $state.params.expName}, function (charts) {
+            if (charts.error) {
+                $rootScope.$broadcast('$loadingError', charts.error);
                 return;
             }
 
-            for (var i=0; i<$scope.run.files.length; i++) {
-                var f = $scope.run.files[i];
-                var ext = /[^.]+$/.exec(f.name);
-
-                if (ext && (ext[0] === 'srs'))
-                    f.link = "#/viewer/"+$state.params.expName+"/"+f.id;
-                else
-                    f.link = "/api/f/"+$state.params.expName+"/"+f.id;
-            }
-
-            $rootScope.$broadcast('$loadingSuccess');
-        });
-
-        ChartFactory.get({expName: $state.params.expName}, function (charts) {
             angular.forEach(charts, function (chart) {
                 chart.render = function (element) {
                     var chartConfig = {};
@@ -300,7 +295,7 @@ angular.module('solace.controllers', []).
                     });
 
                     (function update () {
-                        if ($state.current.controller !== 'RunCtrl')
+                        if ($state.current.controller !== 'DashboardCtrl')
                             return;
 
                         chart.getter();
@@ -310,7 +305,7 @@ angular.module('solace.controllers', []).
                 };
 
                 chart.getter = function () {
-                    ChartDataFactory.get({expName: $state.params.expName, instId: $state.params.instId, runId: $state.params.runId, chartId: chart.id}, function (seriesData) {
+                    ChartDataFactory.get({expName: $state.params.expName, instId: $state.params.instId, runId: 1, chartId: chart.id}, function (seriesData) {
                         angular.forEach(seriesData.data, function (row) {
                             if (seriesData.xType === 'integer')
                                 row[0] = parseInt(row[0]);
@@ -337,5 +332,35 @@ angular.module('solace.controllers', []).
             });
 
             $scope.charts = charts;
+            $rootScope.$broadcast('$loadingSuccess');
         });
+    }).
+
+    controller('FilesCtrl', function ($scope, $rootScope, $state, RunFactory) {
+        $rootScope.$broadcast('$loadingStart');
+
+        RunFactory.get({expName: $state.params.expName, instId: $state.params.instId, runId: 1}, function (res) {
+            if (res.error) {
+                $rootScope.$broadcast('$loadingError', res.error);
+                return;
+            }
+
+            for (var i=0; i<res.files.length; i++) {
+                var f = res.files[i];
+                var ext = /[^.]+$/.exec(f.name);
+
+                if (ext && (ext[0] === 'srs'))
+                    f.link = "#/viewer/"+$state.params.expName+"/"+f.id;
+                else
+                    f.link = "/api/f/"+$state.params.expName+"/"+f.id;
+            }
+
+            $scope.files = res.files;
+            $rootScope.$broadcast('$loadingSuccess');
+        });
+
+        $scope.sort = {
+            column: 'name',
+            reverse: false
+        };
     });

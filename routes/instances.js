@@ -60,7 +60,7 @@ exports.get = function(req, res) {
         req.db.query('SELECT * FROM runs WHERE instance_id=$1 ORDER BY id DESC;', [instId], function(result) {
             instance.runs = result.rows;
 
-            req.db.query('SELECT * FROM experiment_parameters WHERE exp_id=$1 ORDER BY name;', [instance.exp_id], function(result) {
+            req.db.query('SELECT name,type,value FROM instance_parameter_values WHERE instance_id=$1 ORDER BY name;', [instId], function(result) {
                 req.db.done();
                 instance.parameters = result.rows;
                 res.json(instance);
