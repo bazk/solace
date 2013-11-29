@@ -97,3 +97,72 @@ BEGIN
 END;
 $$
 LANGUAGE 'plpgsql';
+
+CREATE OR REPLACE FUNCTION create_experiment(_name text,
+                                             _owner integer,
+                                             _base integer)
+RETURNS integer AS $$
+DECLARE
+    _exp_id integer;
+    _chart_id integer;
+BEGIN
+    INSERT INTO experiments (name, owner) VALUES (_name, _owner) RETURNING id INTO _exp_id;
+
+    IF _base IS NOT NULL THEN
+        INSERT INTO experiment_user_permissions (exp_id, user_id, read, write) (
+            SELECT _exp_id, user_id, read, write
+                FROM experiment_user_permissions
+                WHERE exp_id=_base
+        );
+
+        INSERT INTO experiment_group_permissions (exp_id, group_id, read, write) (
+            SELECT _exp_id, group_id, read, write
+                FROM experiment_group_permissions
+                WHERE exp_id=_base
+        );
+
+        INSERT INTO experiment_parameters (exp_id, name, type) (
+            SELECT _exp_id, name, type
+                FROM experiment_parameters
+                WHERE exp_id=_base
+        );
+
+        INSERT INTO experiment_result_variables (exp_id, name, type) (
+            SELECT _exp_id, name, type
+                FROM experiment_result_variables
+                WHERE exp_id=_base
+        );
+
+        INSERT INTO charts (exp_id, name, description) (
+            SELECT _exp_id, name, description
+                FROM charts
+                WHERE exp_id=_base
+        );
+
+        INSERT INTO chart_config (chart_id, key, value, type) (
+            SELECT c2.id, cfg.key, cfg.value, cfg.type
+                FROM
+                    charts c1
+                    JOIN charts c2 ON (c1.name=c2.name)
+                    JOIN chart_config cfg ON (c1.id=cfg.chart_id)
+                WHERE c1.id != c2.id AND c1.exp_id=_base AND c2.exp_id=_exp_id
+        );
+
+        INSERT INTO chart_series (chart_id, name, type, x, y) (
+            SELECT c2.id, ser.name, ser.type, c2r1.id, c2r2.id
+                FROM
+                    charts c1
+                    JOIN charts c2 ON (c1.name=c2.name)
+                    JOIN chart_series ser ON (c1.id=ser.chart_id)
+                    JOIN experiment_result_variables c1r1 ON (ser.x=c1r1.id)
+                    JOIN experiment_result_variables c1r2 ON (ser.y=c1r2.id)
+                    JOIN experiment_result_variables c2r1 ON (c1r1.name=c2r1.name)
+                    JOIN experiment_result_variables c2r2 ON (c1r2.name=c2r2.name)
+                WHERE c1.id != c2.id AND c2r1.exp_id=c2.exp_id AND c2r2.exp_id=c2.exp_id AND
+                    c1.exp_id=_base AND c2.exp_id=_exp_id
+        );
+    END IF;
+
+    RETURN _exp_id;
+END;
+$$ LANGUAGE 'plpgsql';
