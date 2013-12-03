@@ -21,14 +21,10 @@ angular.module('solace.factories', []).
         return $resource('/api/e/:expName/:instId/:runId');
     }).
 
-    factory('ResultFactory', function ($resource) {
-        return $resource('/api/e/:expName/:instId/:runId/result/:name');
-    }).
-
     factory('ChartFactory', function ($resource) {
-        return $resource('/api/c/:expName');
+        return $resource('/api/c/:expName/:chartId');
     }).
 
     factory('ChartDataFactory', function ($resource) {
-        return $resource('/api/e/:expName/:instId/:runId/chart-data/:chartId');
+        return $resource('/api/c/:expName/:chartId/data/:instId/:runId');
     });

@@ -182,13 +182,12 @@ angular.module('solace.controllers', []).
 
     controller('ExperimentListCtrl', function ($scope, $rootScope, ExperimentFactory) {
         $rootScope.$broadcast('$loadingStart');
-        ExperimentFactory.get(function (res) {
+        $scope.experiments = ExperimentFactory.query(function (res) {
             if (res.error) {
                 $rootScope.$broadcast('$loadingError', res.error);
                 return;
             }
 
-            $scope.experiments = res.experiments;
             $rootScope.$broadcast('$loadingSuccess');
         });
     }).
@@ -257,7 +256,7 @@ angular.module('solace.controllers', []).
     controller('DashboardCtrl', function ($scope, $rootScope, $state, $timeout, ChartFactory, ChartDataFactory) {
         $rootScope.$broadcast('$loadingStart');
 
-        ChartFactory.get({expName: $state.params.expName}, function (charts) {
+        ChartFactory.query({expName: $state.params.expName}, function (charts) {
             if (charts.error) {
                 $rootScope.$broadcast('$loadingError', charts.error);
                 return;
@@ -287,12 +286,12 @@ angular.module('solace.controllers', []).
 
                     chart.highchart = new Highcharts.Chart(chartConfig);
 
-                    angular.forEach(chart.series, function (series) {
-                        series.highseries = chart.highchart.addSeries({
-                            name: series.name,
-                            type: series.type
+                    for (var k in chart.series) {
+                        chart.series[k].highseries = chart.highchart.addSeries({
+                            name: chart.series[k].name,
+                            type: chart.series[k].type
                         });
-                    });
+                    };
 
                     (function update () {
                         if ($state.current.controller !== 'DashboardCtrl')
@@ -305,28 +304,35 @@ angular.module('solace.controllers', []).
                 };
 
                 chart.getter = function () {
-                    ChartDataFactory.get({expName: $state.params.expName, instId: $state.params.instId, runId: 1, chartId: chart.id}, function (seriesData) {
-                        angular.forEach(seriesData.data, function (row) {
-                            if (seriesData.xType === 'integer')
-                                row[0] = parseInt(row[0]);
-                            else if (seriesData.xType === 'real')
-                                row[0] = parseFloat(row[0]);
-                            else if (seriesData.xType === 'boolean')
-                                row[0] = /true/i.test(row[0]) || /t/i.test(row[0]);
-                            else if (seriesData.xType === 'timestamp')
-                                row[0] = parseInt(row[0]);
+                    ChartDataFactory.get({expName: $state.params.expName, chartId: chart.id, instId: $state.params.instId, runId: 1}, function (res) {
+                        if (!res.series)
+                            return;
 
-                            if (seriesData.yType === 'integer')
-                                row[1] = parseInt(row[1]);
-                            else if (seriesData.yType === 'real')
-                                row[1] = parseFloat(row[1]);
-                            else if (seriesData.yType === 'boolean')
-                                row[1] = /true/i.test(row[1]) || /t/i.test(row[1]);
-                            else if (seriesData.yType === 'timestamp')
-                                row[1] = parseInt(row[1]);
-                        });
+                        for (var k in res.series) {
+                            var series = res.series[k];
 
-                        chart.series[0].highseries.setData(seriesData.data);
+                            angular.forEach(series.data, function (row) {
+                                if (series.xtype === 'integer')
+                                    row[0] = parseInt(row[0]);
+                                else if (series.xtype === 'real')
+                                    row[0] = parseFloat(row[0]);
+                                else if (series.xtype === 'boolean')
+                                    row[0] = /true/i.test(row[0]) || /t/i.test(row[0]);
+                                else if (series.xtype === 'timestamp')
+                                    row[0] = parseInt(row[0]);
+
+                                if (series.ytype === 'integer')
+                                    row[1] = parseInt(row[1]);
+                                else if (series.ytype === 'real')
+                                    row[1] = parseFloat(row[1]);
+                                else if (series.ytype === 'boolean')
+                                    row[1] = /true/i.test(row[1]) || /t/i.test(row[1]);
+                                else if (series.ytype === 'timestamp')
+                                    row[1] = parseInt(row[1]);
+                            });
+
+                            chart.series[k].highseries.setData(series.data);
+                        };
                     });
                 };
             });

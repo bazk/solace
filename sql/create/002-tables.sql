@@ -157,16 +157,18 @@ CREATE TABLE charts (
 );
 
 CREATE TABLE chart_config (
-    chart_id        INTEGER NOT NULL REFERENCES charts(id),
+    chart_id        INTEGER NOT NULL REFERENCES charts(id) ON DELETE CASCADE,
     key             TEXT NOT NULL,
     value           TEXT NOT NULL,
     type            variable_type NOT NULL
 );
 
 CREATE TABLE chart_series (
-    chart_id        INTEGER NOT NULL REFERENCES charts(id),
+    chart_id        INTEGER NOT NULL REFERENCES charts(id) ON DELETE CASCADE,
     name            TEXT NOT NULL,
     type            TEXT,
-    x               INTEGER NOT NULL REFERENCES experiment_result_variables(id),
-    y               INTEGER NOT NULL REFERENCES experiment_result_variables(id)
+    x               CITEXT NOT NULL,
+    xtype           variable_type NOT NULL,
+    y               CITEXT NOT NULL,
+    ytype           variable_type NOT NULL
 );

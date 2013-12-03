@@ -48,11 +48,12 @@ app.post('/api/e/:expName/:instId/:runId/done', sessions.auth, db.connect, permi
 app.post('/api/e/:expName/:instId/:runId/cancel', sessions.auth, db.connect, permissions.write, runs.cancel);
 app.post('/api/e/:expName/:instId/:runId/upload', sessions.auth, db.connect, permissions.write, runs.upload);
 app.get( '/api/e/:expName/:instId/:runId/files', sessions.auth, db.connect, permissions.read, runs.listFiles);
-app.get( '/api/e/:expName/:instId/:runId/chart-data/:chartId', sessions.auth, db.connect, permissions.read, runs.getChartData);
 
 app.get( '/api/f/:expName', sessions.auth, db.connect, permissions.read, files.list);
 app.get( '/api/f/:expName/:fileId', sessions.auth, db.connect, permissions.read, files.get);
 
 app.get( '/api/c/:expName', db.connect, charts.list);
+// app.get( '/api/c/:expName/:chartId', db.connect, charts.get);
+app.get( '/api/c/:expName/:chartId/data/:instId/:runId', db.connect, charts.getData);
 
 app.listen(port);
