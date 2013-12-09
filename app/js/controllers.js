@@ -284,13 +284,20 @@ angular.module('solace.controllers', []).
                         chartConfig.chart = {};
                     chartConfig.chart.renderTo = element[0];
 
+                    console.log(chartConfig);
+
                     chart.highchart = new Highcharts.Chart(chartConfig);
 
                     for (var k in chart.series) {
-                        chart.series[k].highseries = chart.highchart.addSeries({
-                            name: chart.series[k].name,
-                            type: chart.series[k].type
-                        });
+                        var series = {};
+
+                        if (chart.series[k].name)
+                            series.name = chart.series[k].name;
+
+                        if (chart.series[k].type)
+                            series.type = chart.series[k].type;
+
+                        chart.series[k].highseries = chart.highchart.addSeries(series);
                     };
 
                     (function update () {
@@ -308,31 +315,8 @@ angular.module('solace.controllers', []).
                         if (!res.series)
                             return;
 
-                        for (var k in res.series) {
-                            var series = res.series[k];
-
-                            angular.forEach(series.data, function (row) {
-                                if (series.xtype === 'integer')
-                                    row[0] = parseInt(row[0]);
-                                else if (series.xtype === 'real')
-                                    row[0] = parseFloat(row[0]);
-                                else if (series.xtype === 'boolean')
-                                    row[0] = /true/i.test(row[0]) || /t/i.test(row[0]);
-                                else if (series.xtype === 'timestamp')
-                                    row[0] = parseInt(row[0]);
-
-                                if (series.ytype === 'integer')
-                                    row[1] = parseInt(row[1]);
-                                else if (series.ytype === 'real')
-                                    row[1] = parseFloat(row[1]);
-                                else if (series.ytype === 'boolean')
-                                    row[1] = /true/i.test(row[1]) || /t/i.test(row[1]);
-                                else if (series.ytype === 'timestamp')
-                                    row[1] = parseInt(row[1]);
-                            });
-
-                            chart.series[k].highseries.setData(series.data);
-                        };
+                        for (var k in res.series)
+                            chart.series[k].highseries.setData(res.series[k]);
                     });
                 };
             });
