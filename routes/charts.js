@@ -72,36 +72,40 @@ exports.getData = function(req, res) {
         runId   = parseInt(req.params.runId),
         chartId = parseInt(req.params.chartId);
 
-    req.db.query('SELECT cs.name, r1.value AS x, cs.xtype, r2.value AS y, cs.ytype \
-                    FROM ( \
-                        SELECT r1.name, r1.moment AS x, MAX(r2.moment) AS y \
-                            FROM (SELECT cs.name,rv.moment FROM run_result_values rv, chart_series cs  \
-                                    WHERE rv.run_id = $1 AND rv.instance_id = $2 AND rv.name = cs.x AND cs.chart_id = $3) AS r1, \
-                                (SELECT cs.name,rv.moment FROM run_result_values rv, chart_series cs \
-                                    WHERE rv.run_id = $1 AND rv.instance_id = $2 AND rv.name = cs.y AND cs.chart_id = $3) AS r2 \
-                            WHERE \
-                                r1.name = r2.name AND r1.moment >= r2.moment \
-                            GROUP BY r1.name,r1.moment \
-                        ) AS m, \
-                        run_result_values r1, \
-                        run_result_values r2, \
-                        chart_series cs \
-                    WHERE \
-                        cs.chart_id = $3 AND \
-                        r1.run_id = $1 AND r1.instance_id = $2 AND r1.name = cs.x AND \
-                        r2.run_id = $1 AND r2.instance_id = $2 AND r2.name = cs.y AND \
-                        r1.moment = m.x AND r2.moment = m.y \
-                    ORDER BY cs.name, r1.moment;',
-                [runId, instId, chartId], function (result) {
+    req.db.query('SELECT * FROM get_chart_data($1, $2, $3);',
+                [instId, runId, chartId], function (result) {
 
         req.db.done();
 
         r = {};
         for (var i=0; i < result.rows.length; i++) {
-            if (typeof r[result.rows[i].name] === 'undefined')
-                r[result.rows[i].name] = {xtype: result.rows[i].xtype, ytype: result.rows[i].ytype, data: []}
+            var row = result.rows[i];
 
-            r[result.rows[i].name].data.push([result.rows[i].x, result.rows[i].y]);
+            if (row.xtype === 'integer')
+                row.x = parseInt(row.x);
+            else if (row.xtype === 'real')
+                row.x = parseFloat(row.x);
+            else if (row.xtype === 'boolean')
+                row.x = /true/i.test(row.x) || /t/i.test(row.x);
+            else if (row.xtype === 'timestamp')
+                row.x = parseInt(row.x);
+
+            if (row.ytype === 'integer')
+                row.y = parseInt(row.y);
+            else if (row.ytype === 'real')
+                row.y = parseFloat(row.y);
+            else if (row.ytype === 'boolean')
+                row.y = /true/i.test(row.y) || /t/i.test(row.y);
+            else if (row.ytype === 'timestamp')
+                row.y = parseInt(row.y);
+
+            if (typeof r[row.name] === 'undefined')
+                r[row.name] = [];
+
+            if (row.y)
+                r[row.name].push([row.x, row.y]);
+            else
+                r[row.name].push(row.x);
         }
 
         res.json({series: r});
