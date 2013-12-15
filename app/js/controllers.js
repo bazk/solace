@@ -197,7 +197,7 @@ angular.module('solace.controllers', []).
         $rootScope.$broadcast('$loadingSuccess');
     }).
 
-    controller('ExperimentDetailCtrl', function ($scope, $rootScope, $state, ExperimentFactory) {
+    controller('ExperimentDetailCtrl', function ($scope, $rootScope, $state, $timeout, ExperimentFactory) {
         $rootScope.$broadcast('$loadingStart');
 
         $scope.experiment = ExperimentFactory.get({expName: $state.params.expName}, function (res) {
@@ -209,6 +209,15 @@ angular.module('solace.controllers', []).
             $rootScope.$broadcast('$loadingSuccess');
             updateActiveInstance();
         });
+
+        function updateInstances() {
+            $scope.experiment = ExperimentFactory.get({expName: $state.params.expName}, function (res) {
+                updateActiveInstance();
+                $timeout(updateInstances, 60*1000);
+            });
+        }
+
+        $timeout(updateInstances, 60*1000);
 
         function updateActiveInstance() {
             if (typeof $state.params.instId !== 'undefined' ) {
@@ -283,8 +292,6 @@ angular.module('solace.controllers', []).
                     if (!chartConfig.chart)
                         chartConfig.chart = {};
                     chartConfig.chart.renderTo = element[0];
-
-                    console.log(chartConfig);
 
                     chart.highchart = new Highcharts.Chart(chartConfig);
 
