@@ -59,9 +59,16 @@ angular.module('solace.viewer', []).
         $this.size = {width: null, height: null};
         $this.selectedObject = null;
 
-        $this.showCamera = true;
+        $this.showCamera = false;
         $this.showProximity = false;
         $this.showLEDs = true;
+        $this.showFirstPath = false;
+        $this.showInfo = false;
+
+        $this.firstPath = [];
+        $this.firstPathCounter = 0;
+
+        $this.svg = null;
 
         $rootScope.$on("$stateChangeStart", function () {
             $this.playing = false;
@@ -74,20 +81,23 @@ angular.module('solace.viewer', []).
             return res;
         };
 
+        $this.exportSVG = function () {
+            $this.canvas[0].toBlob(function(blob) {
+                saveAs(blob, "simulation.png");
+            });
+        }
+
         $this.bind = function (element) {
             $this.canvas = element;
             $this.size.width = element.width();
             $this.size.height = element.height();
-            $this.ctx = $this.canvas.get(0).getContext("2d");
+            $this.ctx = $this.canvas[0].getContext("2d");
 
             $this.canvas.attr("tabindex", "0")
             //$this.canvas.attr("contentEditable", "true")
             //$this.canvas[0].contentEditable = true;
 
-            $this.canvas.mousewheel(function (event, delta, deltaX, deltaY) {
-                $this.zoom += 10 * deltaY;
-                $this.draw();
-            });
+            $this.canvas.mousewheel($this.mousewheel);
 
             $this.canvas.click($this.click);
 
@@ -130,6 +140,30 @@ angular.module('solace.viewer', []).
                         if (angle < 0)
                             angle += 2*Math.PI;
 
+                        if (obj.$name === 'robot0') {
+                            $this.firstPathCounter++;
+
+                            if (($this.firstPathCounter % 10) == 0)
+                                $this.firstPath.push({x: obj.x, y: obj.y});
+
+                            if ($this.showFirstPath) {
+                                $this.ctx.strokeStyle = "rgba(0,0,0,0.8)";
+                                $this.ctx.lineWidth = 1;
+
+                                $this.ctx.beginPath();
+                                $this.ctx.moveTo(pos.x, pos.y);
+                                var bottom = $this.firstPath.length-60;
+                                if (bottom < 0) bottom = 0;
+                                var sp;
+                                for (var p=$this.firstPath.length-1; p>=bottom; p--) {
+                                    sp = $this.posToScreen($this.firstPath[p]);
+                                    $this.ctx.lineTo(sp.x, sp.y);
+                                }
+                                $this.ctx.stroke();
+                            }
+                        }
+
+                        $this.ctx.fillStyle = "#ffffff";
                         if (!selected)
                             $this.ctx.strokeStyle = "#000000";
                         else
@@ -138,6 +172,12 @@ angular.module('solace.viewer', []).
 
                         $this.ctx.beginPath();
                         $this.ctx.arc(pos.x, pos.y, radius, 0, 2*Math.PI);
+                        // $this.ctx.moveTo(pos.x, pos.y-radius);
+                        // $this.ctx.arcTo(pos.x+radius, pos.y-radius, pos.x+radius, pos.y, radius);
+                        // $this.ctx.arcTo(pos.x+radius, pos.y+radius, pos.x, pos.y+radius, radius);
+                        // $this.ctx.arcTo(pos.x-radius, pos.y+radius, pos.x-radius, pos.y, radius);
+                        // $this.ctx.arcTo(pos.x-radius, pos.y-radius, pos.x, pos.y-radius, radius);
+                        $this.ctx.fill();
                         $this.ctx.stroke();
 
                         if (obj.$name.substring(0,5) === 'robot') {
@@ -262,6 +302,9 @@ angular.module('solace.viewer', []).
         };
 
         $this.drawInfo = function () {
+            if (!$this.showInfo)
+                return;
+
             var x = $this.size.width - 190 - 20,
                 y = 20;
 
@@ -279,6 +322,11 @@ angular.module('solace.viewer', []).
                     y += 14;
                 }
             }
+        };
+
+        $this.mousewheel = function (event, delta, deltaX, deltaY) {
+            $this.zoom += 10 * deltaY;
+            $this.draw();
         };
 
         $this.click = function (event) {
@@ -319,16 +367,20 @@ angular.module('solace.viewer', []).
 
         $this.keydown = function (event) {
             switch (event.keyCode) {
-            case 67:
+            case 67: // C
                 $this.showCamera = !$this.showCamera;
                 break;
 
-            case 80:
-                $this.showProximity = !$this.showProximity;
+            case 76: // L
+                $this.showLEDs = !$this.showLEDs;
                 break;
 
-            case 76:
-                $this.showLEDs = !$this.showLEDs;
+            case 80: // P
+                $this.showFirstPath = !$this.showFirstPath;
+                break;
+
+            case 73: // I
+                $this.showInfo = !$this.showInfo;
                 break;
             };
         };
@@ -411,6 +463,8 @@ angular.module('solace.viewer', []).
             $this.progress = 0;
             $this.length = $viewerFile.secondsLength;
             $this.selectedObject = null;
+            $this.firstPath = [];
+            $this.firstPathCounter = 0;
             $this.draw();
 
             $rootScope.$broadcast('$viewerClockUpdate', $this.clock);

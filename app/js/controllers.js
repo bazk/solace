@@ -178,6 +178,10 @@ angular.module('solace.controllers', []).
             xhr.responseType = "arraybuffer";
             xhr.send();
         }
+
+        $scope.exportSVG = function () {
+            $viewer.exportSVG();
+        };
     }).
 
     controller('ExperimentListCtrl', function ($scope, $rootScope, ExperimentFactory) {
